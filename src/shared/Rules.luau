@@ -23,7 +23,16 @@ local function canRepair(state: Types.PlayerState, slot: number, points: number)
 	return true
 end
 
+local function affordableRepair(state: Types.PlayerState, slot: number): number
+	local segment = state.dungeon.segments[slot]
+	if not segment then
+		return 0
+	end
+	return math.min(100 - segment.condition, state.bronze // repairCost(segment, 1))
+end
+
 return {
 	repairCost = repairCost,
 	canRepair = canRepair,
+	affordableRepair = affordableRepair,
 }

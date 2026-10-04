@@ -4,15 +4,12 @@ local Types = require(Shared.Types)
 local Rules = require(Shared.Rules)
 local Logic = script.Parent.Parent.logic
 local StartingState = require(Logic.StartingState)
-local PartyGen = require(Logic.PartyGen)
-local RaidSim = require(Logic.RaidSim)
-local Payout = require(Logic.Payout)
-local Wages = require(Logic.Wages)
+local PlayRaid = require(Logic.PlayRaid)
 local Repair = require(Logic.Repair)
 
 local function repairFrontToBack(state: Types.PlayerState): Types.PlayerState
-	for slot, segment in state.dungeon.segments do
-		local points = math.min(100 - segment.condition, state.bronze // Rules.repairCost(segment, 1))
+	for slot in state.dungeon.segments do
+		local points = Rules.affordableRepair(state, slot)
 		if points > 0 and Rules.canRepair(state, slot, points) then
 			state = Repair.apply(state, slot, points)
 		end
@@ -21,10 +18,8 @@ local function repairFrontToBack(state: Types.PlayerState): Types.PlayerState
 end
 
 local function playRaid(state: Types.PlayerState, rng: Random): (Types.PlayerState, boolean)
-	local party = PartyGen.make(state.dungeon, rng)
-	local result = RaidSim.simulate(state.dungeon, party)
-	local bronze = Wages.pay(state.bronze + Payout.amount(result), result.after)
-	return repairFrontToBack({ bronze = bronze, dungeon = result.after }), result.won
+	local afterRaid, result = PlayRaid.play(state, rng)
+	return repairFrontToBack(afterRaid), result.won
 end
 
 local function countMobs(dungeon: Types.Dungeon): number

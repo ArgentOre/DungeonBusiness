@@ -26,7 +26,7 @@ end
 
 local function make(dungeon: Types.Dungeon, rng: Random): Types.Party
 	local spread = rng:NextNumber(Catalog.party.powerSpreadMin, Catalog.party.powerSpreadMax)
-	local power = math.round(dungeonPower(dungeon) * spread)
+	local power = math.max(1, math.round(dungeonPower(dungeon) * spread))
 	return {
 		power = power,
 		hp = power * Catalog.party.hpPerPower,
