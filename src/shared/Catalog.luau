@@ -44,5 +44,6 @@ return deepFreeze({
 	economy = {
 		startingBronze = 100,
 		lossPayoutFraction = 0.3,
+		raidCooldownSeconds = 2,
 	},
 })
