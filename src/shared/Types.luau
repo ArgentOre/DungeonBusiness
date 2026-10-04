@@ -50,4 +50,24 @@ export type RaidResult = {
 	loot: number,
 }
 
+export type RoomStats = {
+	trapDamage: number,
+	mobSlots: number,
+	wearPerRaid: number,
+	repairCostPerPoint: number,
+}
+
+export type MobStats = {
+	maxHp: number,
+	damage: number,
+	wage: number,
+	hireCost: number?, -- nil means it can't be bought
+	displayName: string,
+}
+
+export type StarterSegment = {
+	kind: RoomKind,
+	mobs: { MobKind },
+}
+
 return {}
