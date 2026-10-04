@@ -29,10 +29,6 @@
       }
     },
 
-    "Workspace": {
-      "$properties": {
-      }
-    },
     "SoundService": {
       "$properties": {
         "RespectFilteringEnabled": true
