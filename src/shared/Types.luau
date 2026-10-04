@@ -5,7 +5,6 @@ export type MobKind = "Skeleton" | "Slime" | "BoneLord"
 
 export type Mob = {
 	kind: MobKind,
-	hp: number,
 }
 
 export type Segment = {
