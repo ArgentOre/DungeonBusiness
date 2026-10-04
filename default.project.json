@@ -9,6 +9,12 @@
       }
     },
 
+"ServerStorage": {
+  "RoomTemplates": {
+    "$path": "assets/rooms"
+  }
+},
+
     "ServerScriptService": {
       "Server": {
         "$path": "src/server"
