@@ -5,6 +5,10 @@ local Catalog = require(Shared.Catalog)
 
 type Events = { Types.RaidEvent }
 
+local function addEvent(events: Events, event: Types.RaidEvent)
+	table.insert(events, event)
+end
+
 local function effectiveness(segment: Types.Segment): number
 	return segment.condition / 100
 end
@@ -12,7 +16,7 @@ end
 local function springTrap(segment: Types.Segment, slot: number, partyHp: number, events: Events): number
 	local damage = math.round(Catalog.rooms[segment.kind].trapDamage * effectiveness(segment))
 	if damage > 0 then
-		table.insert(events, { kind = "TrapHit", slot = slot, amount = damage })
+		addEvent(events, { kind = "TrapHit", slot = slot, amount = damage })
 	end
 	return partyHp - damage
 end
@@ -32,10 +36,10 @@ local function fightMobs(segment: Types.Segment, slot: number, party: Types.Part
 	while partyHp > 0 and front <= #mobs do
 		local damage = math.round(mobsDamage(mobs, front) * effectiveness(segment))
 		partyHp -= damage
-		table.insert(events, { kind = "MobHit", slot = slot, amount = damage })
+		addEvent(events, { kind = "MobHit", slot = slot, amount = damage })
 		frontHp -= party.power
 		if frontHp <= 0 then
-			table.insert(events, { kind = "MobDefeated", slot = slot })
+			addEvent(events, { kind = "MobDefeated", slot = slot })
 			front += 1
 			frontHp = if front <= #mobs then Catalog.mobs[mobs[front].kind].maxHp else 0
 		end
@@ -44,12 +48,12 @@ local function fightMobs(segment: Types.Segment, slot: number, party: Types.Part
 end
 
 local function runSegment(segment: Types.Segment, slot: number, party: Types.Party, partyHp: number, events: Events): (number, Types.Segment)
-	table.insert(events, { kind = "EnterRoom", slot = slot })
+	addEvent(events, { kind = "EnterRoom", slot = slot })
 	partyHp = springTrap(segment, slot, partyHp, events)
 	local survivors
 	partyHp, survivors = fightMobs(segment, slot, party, partyHp, events)
 	local wear = Catalog.rooms[segment.kind].wearPerRaid
-	table.insert(events, { kind = "RoomDamaged", slot = slot, amount = wear })
+	addEvent(events, { kind = "RoomDamaged", slot = slot, amount = wear })
 	return partyHp, { kind = segment.kind, condition = math.max(0, segment.condition - wear), mobs = survivors }
 end
 
@@ -66,12 +70,12 @@ local function simulate(dungeon: Types.Dungeon, party: Types.Party): Types.RaidR
 		partyHp, updated = runSegment(segment, slot, party, partyHp, events)
 		table.insert(after, updated)
 		if partyHp <= 0 then
-			table.insert(events, { kind = "PartyDefeated", slot = slot })
+			addEvent(events, { kind = "PartyDefeated", slot = slot })
 		end
 	end
 	local won = partyHp <= 0
 	if not won then
-		table.insert(events, { kind = "PartyEscaped", slot = #dungeon.segments })
+		addEvent(events, { kind = "PartyEscaped", slot = #dungeon.segments })
 	end
 	return {
 		won = won,
@@ -81,4 +85,6 @@ local function simulate(dungeon: Types.Dungeon, party: Types.Party): Types.RaidR
 	}
 end
 
-return { simulate = simulate }
+return {
+	simulate = simulate,
+}
