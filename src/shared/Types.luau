@@ -1,7 +1,7 @@
 --!strict
 
 export type RoomKind = "TrapRoom" | "Crypt" | "TreasureRoom"
-export type MobKind = "Skeleton" | "Slime" | "Boss"
+export type MobKind = "Skeleton" | "Slime" | "BoneLord"
 
 export type Mob = {
 	kind: MobKind,
