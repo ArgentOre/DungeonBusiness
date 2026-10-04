@@ -29,7 +29,7 @@ local function mobsDamage(mobs: { Types.Mob }, from: number): number
 	return total
 end
 
-local function fightMobs(segment: Types.Segment, slot: number, party: Types.Party, partyHp: number, events: Events): (number, { Types.Mob })
+local function fightMobs(segment: Types.Segment, slot: number, party: Types.Party, partyHp: number, events: Events): number
 	local mobs = segment.mobs
 	local front = 1
 	local frontHp = if #mobs > 0 then Catalog.mobs[mobs[1].kind].maxHp else 0
@@ -44,17 +44,16 @@ local function fightMobs(segment: Types.Segment, slot: number, party: Types.Part
 			frontHp = if front <= #mobs then Catalog.mobs[mobs[front].kind].maxHp else 0
 		end
 	end
-	return partyHp, table.move(mobs, front, #mobs, 1, {})
+	return partyHp
 end
 
 local function runSegment(segment: Types.Segment, slot: number, party: Types.Party, partyHp: number, events: Events): (number, Types.Segment)
 	addEvent(events, { kind = "EnterRoom", slot = slot })
 	partyHp = springTrap(segment, slot, partyHp, events)
-	local survivors
-	partyHp, survivors = fightMobs(segment, slot, party, partyHp, events)
+	partyHp = fightMobs(segment, slot, party, partyHp, events)
 	local wear = Catalog.rooms[segment.kind].wearPerRaid
 	addEvent(events, { kind = "RoomDamaged", slot = slot, amount = wear })
-	return partyHp, { kind = segment.kind, condition = math.max(0, segment.condition - wear), mobs = survivors }
+	return partyHp, { kind = segment.kind, condition = math.max(0, segment.condition - wear), mobs = segment.mobs }
 end
 
 local function simulate(dungeon: Types.Dungeon, party: Types.Party): Types.RaidResult
