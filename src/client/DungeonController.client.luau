@@ -6,15 +6,30 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Types = require(Shared:WaitForChild("Types"))
 local Rules = require(Shared:WaitForChild("Rules"))
+local Catalog = require(Shared:WaitForChild("Catalog"))
 local EventText = require(Shared:WaitForChild("EventText"))
 
 local GetState = Remotes:WaitForChild("GetState") :: RemoteFunction
 local StartRaid = Remotes:WaitForChild("StartRaid") :: RemoteEvent
 local Repair = Remotes:WaitForChild("Repair") :: RemoteEvent
+local BuyMob = Remotes:WaitForChild("BuyMob") :: RemoteEvent
 local StateChanged = Remotes:WaitForChild("StateChanged") :: RemoteEvent
 local RaidFinished = Remotes:WaitForChild("RaidFinished") :: RemoteEvent
 
 local BUTTON_HEIGHT = 48
+
+local function hireableKinds(): { Types.MobKind }
+	local kinds: { Types.MobKind } = {}
+	for kind: Types.MobKind, stats in Catalog.mobs do
+		if stats.hireCost then
+			table.insert(kinds, kind)
+		end
+	end
+	table.sort(kinds) -- Catalog.mobs is a dictionary, so its order isn't stable
+	return kinds
+end
+
+local HIREABLE = table.freeze(hireableKinds())
 
 local function makeLabel(parent: Instance, text: string): TextLabel
 	local label = Instance.new("TextLabel")
@@ -77,15 +92,35 @@ local function repairText(state: Types.PlayerState, slot: number): string
 	local segment = state.dungeon.segments[slot]
 	local points = Rules.affordableRepair(state, slot)
 	local cost = Rules.repairCost(segment, points)
-	return `Room {slot} {segment.kind}: {segment.condition}% | repair +{points} for {cost}`
+	local staff = `{#segment.mobs}/{Catalog.rooms[segment.kind].mobSlots}`
+	return `Room {slot} {segment.kind}: {segment.condition}% | staff {staff} | repair +{points} for {cost}`
+end
+
+local function makeHireButton(state: Types.PlayerState, slot: number, kind: Types.MobKind)
+	local stats = Catalog.mobs[kind]
+	local allowed = Rules.canBuyMob(state, slot, kind)
+	local button = makeButton(roomButtons, `   Hire {stats.displayName} ({stats.hireCost})`, function()
+		if allowed then
+			BuyMob:FireServer(slot, kind)
+		end
+	end)
+	if not allowed then
+		button.AutoButtonColor = false
+		button.TextTransparency = 0.6
+	end
 end
 
 local function renderRooms(state: Types.PlayerState)
 	clearItems(roomButtons)
-	for slot in state.dungeon.segments do
+	for slot, segment in state.dungeon.segments do
 		makeButton(roomButtons, repairText(state, slot), function()
 			Repair:FireServer(slot, Rules.affordableRepair(state, slot))
 		end)
+		if Rules.hasFreeSlot(segment) then
+			for _, kind: Types.MobKind in HIREABLE do
+				makeHireButton(state, slot, kind)
+			end
+		end
 	end
 end
 

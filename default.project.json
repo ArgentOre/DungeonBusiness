@@ -12,6 +12,7 @@
         "GetState": { "$className": "RemoteFunction" },
         "StartRaid": { "$className": "RemoteEvent" },
         "Repair": { "$className": "RemoteEvent" },
+        "BuyMob": { "$className": "RemoteEvent" },
         "StateChanged": { "$className": "RemoteEvent" },
         "RaidFinished": { "$className": "RemoteEvent" }
       }

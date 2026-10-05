@@ -11,6 +11,7 @@ local Logic = script.Parent.logic
 local StartingState = require(Logic.StartingState)
 local PlayRaid = require(Logic.PlayRaid)
 local Repair = require(Logic.Repair)
+local Hire = require(Logic.Hire)
 
 local states: { [Player]: Types.PlayerState } = {}
 local lastRaidAt: { [Player]: number } = {}
@@ -61,6 +62,27 @@ local function onRepair(player: Player, slot: unknown, points: unknown)
 	setState(player, Repair.apply(state, slot, points))
 end
 
+local function toMobKind(name: string): Types.MobKind?
+	for kind: Types.MobKind in Catalog.mobs do
+		if kind == name then
+			return kind
+		end
+	end
+	return nil
+end
+
+local function onBuyMob(player: Player, slot: unknown, name: unknown)
+	local state = states[player]
+	if not state or typeof(slot) ~= "number" or typeof(name) ~= "string" then
+		return
+	end
+	local kind: Types.MobKind? = toMobKind(name)
+	if not kind or not Rules.canBuyMob(state, slot, kind) then
+		return
+	end
+	setState(player, Hire.apply(state, slot, kind))
+end
+
 Players.PlayerAdded:Connect(onPlayerAdded)
 Players.PlayerRemoving:Connect(onPlayerRemoving)
 for _, player in Players:GetPlayers() do
@@ -70,3 +92,4 @@ end
 Remotes.GetState.OnServerInvoke = onGetState
 Remotes.StartRaid.OnServerEvent:Connect(onStartRaid)
 Remotes.Repair.OnServerEvent:Connect(onRepair)
+Remotes.BuyMob.OnServerEvent:Connect(onBuyMob)

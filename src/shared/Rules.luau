@@ -31,8 +31,32 @@ local function affordableRepair(state: Types.PlayerState, slot: number): number
 	return math.min(100 - segment.condition, state.bronze // repairCost(segment, 1))
 end
 
+local function hasFreeSlot(segment: Types.Segment): boolean
+	return #segment.mobs < Catalog.rooms[segment.kind].mobSlots
+end
+
+local function canBuyMob(state: Types.PlayerState, slot: number, kind: Types.MobKind): (boolean, string?)
+	local segment = state.dungeon.segments[slot]
+	if not segment then
+		return false, "No room in that slot"
+	end
+	if not hasFreeSlot(segment) then
+		return false, "That room has no free slot"
+	end
+	local hireCost = Catalog.mobs[kind].hireCost
+	if hireCost == nil then
+		return false, "That monster can't be hired"
+	end
+	if hireCost > state.bronze then
+		return false, "Not enough bronze"
+	end
+	return true
+end
+
 return {
 	repairCost = repairCost,
 	canRepair = canRepair,
 	affordableRepair = affordableRepair,
+	hasFreeSlot = hasFreeSlot,
+	canBuyMob = canBuyMob,
 }
