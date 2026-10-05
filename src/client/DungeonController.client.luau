@@ -84,6 +84,19 @@ local bronzeLabel = makeLabel(controls, "Bronze: ...")
 makeButton(controls, "Open the doors (start raid)", function()
 	StartRaid:FireServer()
 end)
+local panelToggle = Instance.new("TextButton")
+panelToggle.Position = UDim2.fromScale(0.02, 0.02)
+panelToggle.Size = UDim2.fromScale(0.15, 0.06)
+panelToggle.TextScaled = true
+panelToggle.Text = "Hide panels"
+panelToggle.Activated:Connect(function()
+	local visible = not controls.Visible
+	controls.Visible = visible
+	logPanel.Visible = visible
+	panelToggle.Text = if visible then "Hide panels" else "Show panels"
+end)
+panelToggle.Parent = screen
+
 local roomButtons = makePanel(controls, UDim2.new(), UDim2.fromScale(1, 0))
 roomButtons.AutomaticSize = Enum.AutomaticSize.Y
 roomButtons.BackgroundTransparency = 1

@@ -12,6 +12,7 @@ local StartingState = require(Logic.StartingState)
 local PlayRaid = require(Logic.PlayRaid)
 local Repair = require(Logic.Repair)
 local Hire = require(Logic.Hire)
+local PlotService = require(script.Parent.PlotService)
 
 local states: { [Player]: Types.PlayerState } = {}
 local lastRaidAt: { [Player]: number } = {}
@@ -19,16 +20,21 @@ local rng = Random.new()
 
 local function setState(player: Player, state: Types.PlayerState)
 	states[player] = state
+	PlotService.show(player, state.dungeon)
 	Remotes.StateChanged:FireClient(player, state)
 end
 
 local function onPlayerAdded(player: Player)
-	states[player] = StartingState.create()
+	local state = StartingState.create()
+	states[player] = state
+	PlotService.claim(player)
+	PlotService.show(player, state.dungeon)
 end
 
 local function onPlayerRemoving(player: Player)
 	states[player] = nil
 	lastRaidAt[player] = nil
+	PlotService.release(player)
 end
 
 local function onGetState(player: Player): Types.PlayerState?

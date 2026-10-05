@@ -1,0 +1,62 @@
+--!strict
+-- Turns a Dungeon into a Model in the world. The origin is the hallway entrance:
+-- the hallway runs along +X from it, and rooms sit on its +Z side in raid order,
+-- each room's doorway (north wall) facing the hallway.
+local ServerStorage = game:GetService("ServerStorage")
+local Shared = game:GetService("ReplicatedStorage").Shared
+local Types = require(Shared.Types)
+
+local RoomTemplates = ServerStorage.RoomTemplates
+
+local ROOM_SIZE = 72
+local ROOM_SPACING = 82 -- matches how Jordan laid the templates out side by side
+local HALLWAY_WIDTH = 20
+local ENTRANCE_LENGTH = 12 -- hallway before the first doorway, where the player arrives
+
+local function findFloor(room: Model): BasePart
+	local structure = room:FindFirstChild("Structure")
+	local floor = structure and structure:FindFirstChild("Floor")
+	assert(floor and floor:IsA("BasePart"), `Room template {room.Name} needs Structure.Floor`)
+	return floor
+end
+
+local function cloneRoom(kind: Types.RoomKind): Model
+	local template = RoomTemplates:FindFirstChild(kind)
+	assert(template and template:IsA("Model"), `No room template named {kind}`)
+	local room = template:Clone()
+	room.PrimaryPart = findFloor(room)
+	return room
+end
+
+local function roomCenterX(slot: number): number
+	return ENTRANCE_LENGTH + ROOM_SIZE / 2 + (slot - 1) * ROOM_SPACING
+end
+
+-- Placeholder until Jordan builds a hallway piece
+local function makeHallway(origin: CFrame, roomCount: number): Part
+	local length = roomCenterX(roomCount) + ROOM_SIZE / 2
+	local hallway = Instance.new("Part")
+	hallway.Name = "Hallway"
+	hallway.Anchored = true
+	hallway.Size = Vector3.new(length, 1, HALLWAY_WIDTH)
+	hallway.CFrame = origin * CFrame.new(length / 2, -0.5, 0)
+	return hallway
+end
+
+local function build(dungeon: Types.Dungeon, origin: CFrame): Model
+	local model = Instance.new("Model")
+	model.Name = "Dungeon"
+	local roomCenterZ = HALLWAY_WIDTH / 2 + ROOM_SIZE / 2
+	for slot, segment in dungeon.segments do
+		local room = cloneRoom(segment.kind)
+		room.Name = `{slot} {segment.kind}`
+		room:PivotTo(origin * CFrame.new(roomCenterX(slot), -0.5, roomCenterZ))
+		room.Parent = model
+	end
+	makeHallway(origin, #dungeon.segments).Parent = model
+	return model
+end
+
+return {
+	build = build,
+}
