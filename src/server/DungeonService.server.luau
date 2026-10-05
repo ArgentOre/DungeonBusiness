@@ -1,5 +1,6 @@
 --!strict
 local Players = game:GetService("Players")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
@@ -57,15 +58,28 @@ local function onStartRaid(player: Player)
 	Remotes.RaidFinished:FireClient(player, result.events, result.won)
 end
 
-local function onRepair(player: Player, slot: unknown, points: unknown)
+local function tryRepair(player: Player, slot: number, points: number)
 	local state = states[player]
-	if not state or typeof(slot) ~= "number" or typeof(points) ~= "number" then
-		return
-	end
-	if not Rules.canRepair(state, slot, points) then
+	if not state or not Rules.canRepair(state, slot, points) then
 		return
 	end
 	setState(player, Repair.apply(state, slot, points))
+end
+
+local function onRepair(player: Player, slot: unknown, points: unknown)
+	if typeof(slot) ~= "number" or typeof(points) ~= "number" then
+		return
+	end
+	tryRepair(player, slot, points)
+end
+
+local function onPromptTriggered(prompt: ProximityPrompt, player: Player)
+	local slot: unknown = prompt:GetAttribute("RepairSlot")
+	local state = states[player]
+	if typeof(slot) ~= "number" or not state or not PlotService.owns(player, prompt) then
+		return
+	end
+	tryRepair(player, slot, Rules.affordableRepair(state, slot))
 end
 
 local function toMobKind(name: string): Types.MobKind?
@@ -99,3 +113,4 @@ Remotes.GetState.OnServerInvoke = onGetState
 Remotes.StartRaid.OnServerEvent:Connect(onStartRaid)
 Remotes.Repair.OnServerEvent:Connect(onRepair)
 Remotes.BuyMob.OnServerEvent:Connect(onBuyMob)
+ProximityPromptService.PromptTriggered:Connect(onPromptTriggered)
