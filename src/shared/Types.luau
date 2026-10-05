@@ -54,6 +54,7 @@ export type RoomStats = {
 	mobSlots: number,
 	wearPerRaid: number,
 	repairCostPerPoint: number,
+	repairInWorld: boolean, -- repaired by walking to it, not from the panel (Milestone 1, step 1a)
 }
 
 export type MobStats = {

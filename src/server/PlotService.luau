@@ -61,13 +61,22 @@ local function show(player: Player, dungeon: Types.Dungeon)
 	if not plot then
 		return
 	end
-	if plot.model then
-		plot.model:Destroy()
-	end
+	local oldModel = plot.model
 	local model = DungeonBuilder.build(dungeon, plotOrigin(plot.index))
 	model.Name = `{player.Name}'s Dungeon`
 	model.Parent = workspace
 	plot.model = model
+	-- Destroy the old dungeon only after the new one is in place, so a player
+	-- standing in a room never loses the floor under them during a rebuild
+	if oldModel then
+		oldModel:Destroy()
+	end
+end
+
+local function owns(player: Player, instance: Instance): boolean
+	local plot = plots[player]
+	local model = if plot then plot.model else nil
+	return model ~= nil and instance:IsDescendantOf(model)
 end
 
 local function release(player: Player)
@@ -85,5 +94,6 @@ end
 return {
 	claim = claim,
 	show = show,
+	owns = owns,
 	release = release,
 }

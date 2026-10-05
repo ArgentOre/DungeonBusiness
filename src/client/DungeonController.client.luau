@@ -101,12 +101,27 @@ local roomButtons = makePanel(controls, UDim2.new(), UDim2.fromScale(1, 0))
 roomButtons.AutomaticSize = Enum.AutomaticSize.Y
 roomButtons.BackgroundTransparency = 1
 
-local function repairText(state: Types.PlayerState, slot: number): string
+local function roomStatus(state: Types.PlayerState, slot: number): string
 	local segment = state.dungeon.segments[slot]
-	local points = Rules.affordableRepair(state, slot)
-	local cost = Rules.repairCost(segment, points)
 	local staff = `{#segment.mobs}/{Catalog.rooms[segment.kind].mobSlots}`
-	return `Room {slot} {segment.kind}: {segment.condition}% | staff {staff} | repair +{points} for {cost}`
+	return `Room {slot} {segment.kind}: {segment.condition}% | staff {staff}`
+end
+
+local function repairText(state: Types.PlayerState, slot: number): string
+	local points = Rules.affordableRepair(state, slot)
+	local cost = Rules.repairCost(state.dungeon.segments[slot], points)
+	return `{roomStatus(state, slot)} | repair +{points} for {cost}`
+end
+
+local function makeRoomRow(state: Types.PlayerState, slot: number)
+	local segment = state.dungeon.segments[slot]
+	if Catalog.rooms[segment.kind].repairInWorld then
+		makeLabel(roomButtons, `{roomStatus(state, slot)} | repair it in the room`)
+		return
+	end
+	makeButton(roomButtons, repairText(state, slot), function()
+		Repair:FireServer(slot, Rules.affordableRepair(state, slot))
+	end)
 end
 
 local function makeHireButton(state: Types.PlayerState, slot: number, kind: Types.MobKind)
@@ -126,9 +141,7 @@ end
 local function renderRooms(state: Types.PlayerState)
 	clearItems(roomButtons)
 	for slot, segment in state.dungeon.segments do
-		makeButton(roomButtons, repairText(state, slot), function()
-			Repair:FireServer(slot, Rules.affordableRepair(state, slot))
-		end)
+		makeRoomRow(state, slot)
 		if Rules.hasFreeSlot(segment) then
 			for _, kind: Types.MobKind in HIREABLE do
 				makeHireButton(state, slot, kind)
