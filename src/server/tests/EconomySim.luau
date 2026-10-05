@@ -6,6 +6,7 @@ local Logic = script.Parent.Parent.logic
 local StartingState = require(Logic.StartingState)
 local PlayRaid = require(Logic.PlayRaid)
 local Repair = require(Logic.Repair)
+local Hire = require(Logic.Hire)
 
 local function repairFrontToBack(state: Types.PlayerState): Types.PlayerState
 	for slot in state.dungeon.segments do
@@ -17,9 +18,18 @@ local function repairFrontToBack(state: Types.PlayerState): Types.PlayerState
 	return state
 end
 
+local function hireSlimeIfAffordable(state: Types.PlayerState): Types.PlayerState
+	for slot in state.dungeon.segments do
+		if Rules.canBuyMob(state, slot, "Slime") then
+			return Hire.apply(state, slot, "Slime")
+		end
+	end
+	return state
+end
+
 local function playRaid(state: Types.PlayerState, rng: Random): (Types.PlayerState, boolean)
 	local afterRaid, result = PlayRaid.play(state, rng)
-	return repairFrontToBack(afterRaid), result.won
+	return hireSlimeIfAffordable(repairFrontToBack(afterRaid)), result.won
 end
 
 local function countMobs(dungeon: Types.Dungeon): number
