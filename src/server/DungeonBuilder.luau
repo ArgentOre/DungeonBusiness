@@ -31,10 +31,16 @@ local function cloneRoom(kind: Types.RoomKind): Model
 	return room
 end
 
-local function findTrap(room: Model): Instance
+-- A missing or incomplete trap is art still in progress, not a broken dungeon:
+-- warn and build the room without it, so the rest of the dungeon still loads
+local function findUsableTrap(room: Model): Instance?
 	local gameplay = room:FindFirstChild("Gameplay")
 	local trap = gameplay and gameplay:FindFirstChild("Trap")
-	assert(trap, `Room template {room.Name} needs Gameplay.Trap`)
+	local spot = trap and trap:FindFirstChild("RepairSpot")
+	if not (trap and trap:FindFirstChild("Armed") and trap:FindFirstChild("Sprung") and spot and spot:IsA("BasePart")) then
+		warn(`{room.Name}: needs Gameplay.Trap with Armed, Sprung and a RepairSpot part; built without a trap`)
+		return nil
+	end
 	return trap
 end
 
@@ -44,13 +50,12 @@ end
 
 local function removeUnusedTrapState(trap: Instance, sprung: boolean)
 	local unused = trap:FindFirstChild(if sprung then "Armed" else "Sprung")
-	assert(unused, "Gameplay.Trap needs both Armed and Sprung")
-	unused:Destroy()
+	if unused then
+		unused:Destroy()
+	end
 end
 
 local function addRearmPrompt(trap: Instance, slot: number)
-	local spot = trap:FindFirstChild("RepairSpot")
-	assert(spot and spot:IsA("BasePart"), "Gameplay.Trap needs a RepairSpot part")
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "RearmPrompt"
 	prompt.ActionText = "Re-arm"
@@ -59,11 +64,14 @@ local function addRearmPrompt(trap: Instance, slot: number)
 	prompt.MaxActivationDistance = REARM_PROMPT_DISTANCE
 	prompt.RequiresLineOfSight = false -- RepairSpot sits inside the trap's own parts
 	prompt:SetAttribute("RepairSlot", slot)
-	prompt.Parent = spot
+	prompt.Parent = trap:FindFirstChild("RepairSpot")
 end
 
 local function setUpTrap(room: Model, segment: Types.Segment, slot: number)
-	local trap = findTrap(room)
+	local trap = findUsableTrap(room)
+	if not trap then
+		return
+	end
 	local sprung = isSprung(segment)
 	removeUnusedTrapState(trap, sprung)
 	if sprung then
