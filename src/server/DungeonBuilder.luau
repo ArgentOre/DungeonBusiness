@@ -79,6 +79,15 @@ local function setUpTrap(room: Model, segment: Types.Segment, slot: number)
 	end
 end
 
+-- Mess is optional art: a room without it simply looks tidy, so no warning
+local function removeMessIfTidy(room: Model, segment: Types.Segment)
+	local gameplay = room:FindFirstChild("Gameplay")
+	local mess = gameplay and gameplay:FindFirstChild("Mess")
+	if mess and segment.condition >= 100 then
+		mess:Destroy()
+	end
+end
+
 local function roomCenterX(slot: number): number
 	return ENTRANCE_LENGTH + ROOM_SIZE / 2 + (slot - 1) * ROOM_SPACING
 end
@@ -104,6 +113,7 @@ local function build(dungeon: Types.Dungeon, origin: CFrame): Model
 		if Catalog.rooms[segment.kind].repairInWorld then
 			setUpTrap(room, segment, slot)
 		end
+		removeMessIfTidy(room, segment)
 		room:PivotTo(origin * CFrame.new(roomCenterX(slot), -0.5, roomCenterZ))
 		room.Parent = model
 	end

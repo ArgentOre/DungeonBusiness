@@ -13,9 +13,9 @@ local function deepFreeze<T>(value: T): T
 end
 
 local rooms: { [Types.RoomKind]: Types.RoomStats } = {
-	TrapRoom = { trapDamage = 10, mobSlots = 0, wearPerRaid = 13, repairCostPerPoint = 1, repairInWorld = true },
-	Crypt = { trapDamage = 0, mobSlots = 3, wearPerRaid = 5, repairCostPerPoint = 1, repairInWorld = false },
-	TreasureRoom = { trapDamage = 0, mobSlots = 1, wearPerRaid = 3, repairCostPerPoint = 2, repairInWorld = false },
+	TrapRoom = { displayName = "Trap Room", trapDamage = 10, mobSlots = 0, wearPerRaid = 13, repairCostPerPoint = 1, repairInWorld = true },
+	Crypt = { displayName = "Crypt", trapDamage = 0, mobSlots = 3, wearPerRaid = 5, repairCostPerPoint = 1, repairInWorld = false },
+	TreasureRoom = { displayName = "Treasure Room", trapDamage = 0, mobSlots = 1, wearPerRaid = 3, repairCostPerPoint = 2, repairInWorld = false },
 }
 
 local mobs: { [Types.MobKind]: Types.MobStats } = {

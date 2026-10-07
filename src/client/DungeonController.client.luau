@@ -1,4 +1,5 @@
 --!strict
+-- The cleanup HUD: bronze, the raid button, the dungeon's rooms, and the raid log.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -8,6 +9,8 @@ local Types = require(Shared:WaitForChild("Types"))
 local Rules = require(Shared:WaitForChild("Rules"))
 local Catalog = require(Shared:WaitForChild("Catalog"))
 local EventText = require(Shared:WaitForChild("EventText"))
+local Ui = require(script.Parent:WaitForChild("Ui"))
+local RaidReportView = require(script.Parent:WaitForChild("RaidReportView"))
 
 local GetState = Remotes:WaitForChild("GetState") :: RemoteFunction
 local StartRaid = Remotes:WaitForChild("StartRaid") :: RemoteEvent
@@ -16,7 +19,7 @@ local BuyMob = Remotes:WaitForChild("BuyMob") :: RemoteEvent
 local StateChanged = Remotes:WaitForChild("StateChanged") :: RemoteEvent
 local RaidFinished = Remotes:WaitForChild("RaidFinished") :: RemoteEvent
 
-local BUTTON_HEIGHT = 48
+local EDGE = 16 -- gap between the HUD and the screen edge
 
 local function hireableKinds(): { Types.MobKind }
 	local kinds: { Types.MobKind } = {}
@@ -31,140 +34,145 @@ end
 
 local HIREABLE = table.freeze(hireableKinds())
 
-local function makeLabel(parent: Instance, text: string): TextLabel
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, 0, 0, BUTTON_HEIGHT)
-	label.TextScaled = true
-	label.Text = text
-	label.LayoutOrder = #parent:GetChildren()
-	label.Parent = parent
-	return label
-end
-
-local function makeButton(parent: Instance, text: string, onClick: () -> ()): TextButton
-	local button = Instance.new("TextButton")
-	button.Size = UDim2.new(1, 0, 0, BUTTON_HEIGHT)
-	button.TextScaled = true
-	button.Text = text
-	button.Activated:Connect(onClick)
-	button.LayoutOrder = #parent:GetChildren()
-	button.Parent = parent
-	return button
-end
-
-local function makePanel(parent: Instance, position: UDim2, size: UDim2): Frame
-	local frame = Instance.new("Frame")
-	frame.Position = position
-	frame.Size = size
-	frame.BackgroundTransparency = 0.3
-	frame.LayoutOrder = #parent:GetChildren()
-	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 6)
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = frame
-	frame.Parent = parent
-	return frame
-end
-
-local function clearItems(panel: Instance)
-	for _, child in panel:GetChildren() do
-		if child:IsA("GuiObject") then
-			child:Destroy()
-		end
-	end
-end
-
 local screen = Instance.new("ScreenGui")
 screen.ResetOnSpawn = false
+screen.IgnoreGuiInset = false
 screen.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 
-local controls = makePanel(screen, UDim2.fromScale(0.02, 0.1), UDim2.fromScale(0.35, 0.8))
-local logPanel = makePanel(screen, UDim2.fromScale(0.4, 0.1), UDim2.fromScale(0.55, 0.8))
-local bronzeLabel = makeLabel(controls, "Bronze: ...")
-makeButton(controls, "Open the doors (start raid)", function()
+local currentState: Types.PlayerState? = nil
+
+-- Top left: bronze, and the toggle that hides the big panels
+local bronzePanel = Ui.panel(screen, 200, 8)
+bronzePanel.Position = UDim2.fromOffset(EDGE, EDGE)
+local bronzeLabel = Ui.text(bronzePanel, "… bronze", Ui.STYLES.money)
+
+-- Top right: the one main action
+local raidColumn = Instance.new("Frame")
+raidColumn.AnchorPoint = Vector2.new(1, 0)
+raidColumn.Position = UDim2.new(1, -EDGE, 0, EDGE)
+raidColumn.Size = UDim2.fromOffset(220, 52)
+raidColumn.BackgroundTransparency = 1
+raidColumn.Parent = screen
+Ui.primaryButton(raidColumn, "Open the doors", function()
 	StartRaid:FireServer()
 end)
-local panelToggle = Instance.new("TextButton")
-panelToggle.Position = UDim2.fromScale(0.02, 0.02)
-panelToggle.Size = UDim2.fromScale(0.15, 0.06)
-panelToggle.TextScaled = true
-panelToggle.Text = "Hide panels"
-panelToggle.Activated:Connect(function()
-	local visible = not controls.Visible
-	controls.Visible = visible
-	logPanel.Visible = visible
+
+-- Bottom left: the rooms
+local dungeonPanel = Ui.panel(screen, 340, 12)
+dungeonPanel.AnchorPoint = Vector2.new(0, 1)
+dungeonPanel.Position = UDim2.new(0, EDGE, 1, -EDGE)
+Ui.text(dungeonPanel, "Your dungeon", Ui.STYLES.label)
+local roomRows = Ui.group(dungeonPanel, 14)
+
+-- Bottom right: the raid log, opened from the raid report
+local logPanel = Ui.panel(screen, 360, 6)
+logPanel.AnchorPoint = Vector2.new(1, 1)
+logPanel.Position = UDim2.new(1, -EDGE, 1, -EDGE)
+logPanel.Visible = false
+Ui.text(logPanel, "Raid log", Ui.STYLES.label)
+local logLines = Ui.group(logPanel, 2)
+Ui.secondaryButton(logPanel, "Close", function()
+	logPanel.Visible = false
+end)
+
+local panelToggle: TextButton
+panelToggle = Ui.secondaryButton(bronzePanel, "Hide panels", function()
+	local visible = not dungeonPanel.Visible
+	dungeonPanel.Visible = visible
+	logPanel.Visible = visible and logPanel.Visible
 	panelToggle.Text = if visible then "Hide panels" else "Show panels"
 end)
-panelToggle.Parent = screen
 
-local roomButtons = makePanel(controls, UDim2.new(), UDim2.fromScale(1, 0))
-roomButtons.AutomaticSize = Enum.AutomaticSize.Y
-roomButtons.BackgroundTransparency = 1
-
-local function roomStatus(state: Types.PlayerState, slot: number): string
-	local segment = state.dungeon.segments[slot]
-	local staff = `{#segment.mobs}/{Catalog.rooms[segment.kind].mobSlots}`
-	return `Room {slot} {segment.kind}: {segment.condition}% | staff {staff}`
-end
-
-local function repairText(state: Types.PlayerState, slot: number): string
-	local points = Rules.affordableRepair(state, slot)
-	local cost = Rules.repairCost(state.dungeon.segments[slot], points)
-	return `{roomStatus(state, slot)} | repair +{points} for {cost}`
-end
-
-local function makeRoomRow(state: Types.PlayerState, slot: number)
-	local segment = state.dungeon.segments[slot]
-	if Catalog.rooms[segment.kind].repairInWorld then
-		makeLabel(roomButtons, `{roomStatus(state, slot)} | repair it in the room`)
-		return
+local function repairButtonText(segment: Types.Segment, points: number): string
+	if segment.condition >= 100 then
+		return "Spotless"
 	end
-	makeButton(roomButtons, repairText(state, slot), function()
-		Repair:FireServer(slot, Rules.affordableRepair(state, slot))
-	end)
+	if points == 0 then
+		return "Repair (not enough bronze)"
+	end
+	return `Repair +{points} · {Rules.repairCost(segment, points)} bronze`
 end
 
-local function makeHireButton(state: Types.PlayerState, slot: number, kind: Types.MobKind)
+local function addRepairButton(row: Frame, state: Types.PlayerState, slot: number)
+	local points = Rules.affordableRepair(state, slot)
+	local segment = state.dungeon.segments[slot]
+	local button = Ui.secondaryButton(row, repairButtonText(segment, points), function()
+		if points > 0 then
+			Repair:FireServer(slot, points)
+		end
+	end)
+	if points == 0 then
+		Ui.disable(button)
+	end
+end
+
+local function addHireButton(row: Frame, state: Types.PlayerState, slot: number, kind: Types.MobKind)
 	local stats = Catalog.mobs[kind]
 	local allowed = Rules.canBuyMob(state, slot, kind)
-	local button = makeButton(roomButtons, `   Hire {stats.displayName} ({stats.hireCost})`, function()
+	local button = Ui.secondaryButton(row, `Hire {stats.displayName} · {stats.hireCost} bronze`, function()
 		if allowed then
 			BuyMob:FireServer(slot, kind)
 		end
 	end)
 	if not allowed then
-		button.AutoButtonColor = false
-		button.TextTransparency = 0.6
+		Ui.disable(button)
 	end
 end
 
-local function renderRooms(state: Types.PlayerState)
-	clearItems(roomButtons)
-	for slot, segment in state.dungeon.segments do
-		makeRoomRow(state, slot)
-		if Rules.hasFreeSlot(segment) then
-			for _, kind: Types.MobKind in HIREABLE do
-				makeHireButton(state, slot, kind)
-			end
+local function roomTitle(segment: Types.Segment, slot: number): string
+	local stats = Catalog.rooms[segment.kind]
+	local staff = if stats.mobSlots > 0 then `   staff {#segment.mobs}/{stats.mobSlots}` else ""
+	return `{slot} · {stats.displayName}{staff}`
+end
+
+local function addRoomRow(state: Types.PlayerState, slot: number)
+	local segment = state.dungeon.segments[slot]
+	local row = Ui.group(roomRows, 6)
+	Ui.text(row, roomTitle(segment, slot), Ui.STYLES.label)
+	local worn = segment.condition < 100
+	Ui.bar(row, segment.condition / 100, if worn then Ui.THEME.needsFix else Ui.THEME.mutedText)
+	if Catalog.rooms[segment.kind].repairInWorld then
+		Ui.text(row, `{segment.condition}% · fix it in the room`, Ui.STYLES.muted)
+	else
+		addRepairButton(row, state, slot)
+	end
+	if Rules.hasFreeSlot(segment) then
+		for _, kind: Types.MobKind in HIREABLE do
+			addHireButton(row, state, slot, kind)
 		end
 	end
 end
 
 local function render(state: Types.PlayerState)
-	bronzeLabel.Text = `Bronze: {state.bronze}`
-	renderRooms(state)
+	currentState = state
+	bronzeLabel.Text = `{state.bronze} bronze`
+	Ui.clear(roomRows)
+	for slot in state.dungeon.segments do
+		addRoomRow(state, slot)
+	end
 end
 
-local function showLog(events: { Types.RaidEvent }, won: boolean)
-	clearItems(logPanel)
-	makeLabel(logPanel, if won then "Raid result: the dungeon held!" else "Raid result: the party got away!")
+local function fillLog(events: { Types.RaidEvent })
+	Ui.clear(logLines)
 	for _, event in events do
-		makeLabel(logPanel, EventText.format(event)).Size = UDim2.new(1, 0, 0, 22)
+		Ui.text(logLines, EventText.format(event), Ui.STYLES.muted)
+	end
+end
+
+local function showLog()
+	logPanel.Visible = true
+end
+
+local function onRaidFinished(events: { Types.RaidEvent }, report: Types.RaidReport)
+	fillLog(events)
+	logPanel.Visible = false
+	if currentState then
+		RaidReportView.show(screen, report, currentState, showLog)
 	end
 end
 
 StateChanged.OnClientEvent:Connect(render)
-RaidFinished.OnClientEvent:Connect(showLog)
+RaidFinished.OnClientEvent:Connect(onRaidFinished)
 
 local initialState = GetState:InvokeServer() :: Types.PlayerState?
 if initialState then
