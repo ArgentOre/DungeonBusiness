@@ -49,7 +49,15 @@ export type RaidResult = {
 	loot: number,
 }
 
+export type RaidReport = {
+	won: boolean,
+	earned: number,
+	wagesPaid: number,
+	endSlot: number, -- room where the party was defeated, or the last room if it escaped
+}
+
 export type RoomStats = {
+	displayName: string,
 	trapDamage: number,
 	mobSlots: number,
 	wearPerRaid: number,

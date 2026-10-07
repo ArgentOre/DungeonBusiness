@@ -11,6 +11,7 @@ local Catalog = require(Shared.Catalog)
 local Logic = script.Parent.logic
 local StartingState = require(Logic.StartingState)
 local PlayRaid = require(Logic.PlayRaid)
+local RaidReport = require(Logic.RaidReport)
 local Repair = require(Logic.Repair)
 local Hire = require(Logic.Hire)
 local PlotService = require(script.Parent.PlotService)
@@ -55,7 +56,7 @@ local function onStartRaid(player: Player)
 	lastRaidAt[player] = os.clock()
 	local newState, result = PlayRaid.play(state, rng)
 	setState(player, newState)
-	Remotes.RaidFinished:FireClient(player, result.events, result.won)
+	Remotes.RaidFinished:FireClient(player, result.events, RaidReport.make(state, newState, result))
 end
 
 local function tryRepair(player: Player, slot: number, points: number)
