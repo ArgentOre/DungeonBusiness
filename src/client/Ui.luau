@@ -19,12 +19,12 @@ local THEME = table.freeze({
 export type TextStyle = { font: Font, size: number, color: Color3 }
 
 local STYLES = table.freeze({
-	heading = table.freeze({ font = THEME.headingFont, size = 26, color = THEME.text }) :: TextStyle,
-	body = table.freeze({ font = THEME.bodyFont, size = 16, color = THEME.text }) :: TextStyle,
-	label = table.freeze({ font = THEME.boldFont, size = 16, color = THEME.text }) :: TextStyle,
-	muted = table.freeze({ font = THEME.bodyFont, size = 14, color = THEME.mutedText }) :: TextStyle,
-	money = table.freeze({ font = THEME.boldFont, size = 18, color = THEME.bronze }) :: TextStyle,
-	warning = table.freeze({ font = THEME.boldFont, size = 14, color = THEME.needsFix }) :: TextStyle,
+	heading = table.freeze({ font = THEME.headingFont, size = 32, color = THEME.text }) :: TextStyle,
+	body = table.freeze({ font = THEME.bodyFont, size = 20, color = THEME.text }) :: TextStyle,
+	label = table.freeze({ font = THEME.boldFont, size = 20, color = THEME.text }) :: TextStyle,
+	muted = table.freeze({ font = THEME.bodyFont, size = 18, color = THEME.mutedText }) :: TextStyle,
+	money = table.freeze({ font = THEME.boldFont, size = 22, color = THEME.bronze }) :: TextStyle,
+	warning = table.freeze({ font = THEME.boldFont, size = 18, color = THEME.needsFix }) :: TextStyle,
 })
 
 local BUTTON_HEIGHT = 44 -- comfortable touch target on phones
