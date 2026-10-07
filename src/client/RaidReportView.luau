@@ -65,6 +65,11 @@ local function addNeedsFixing(parent: Frame, state: Types.PlayerState)
 	end
 end
 
+-- One line for the notice after each raid; tapping the notice opens the full card
+local function summary(report: Types.RaidReport): string
+	return `{headline(report)}  {signed(report.earned - report.wagesPaid)} bronze`
+end
+
 local function show(screen: ScreenGui, report: Types.RaidReport, state: Types.PlayerState, onShowLog: () -> ())
 	hide()
 	local frame = Ui.panel(screen, CARD_WIDTH, 16)
@@ -83,6 +88,7 @@ local function show(screen: ScreenGui, report: Types.RaidReport, state: Types.Pl
 end
 
 return {
+	summary = summary,
 	show = show,
 	hide = hide,
 }

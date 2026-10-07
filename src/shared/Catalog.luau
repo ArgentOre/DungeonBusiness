@@ -44,6 +44,7 @@ return deepFreeze({
 	economy = {
 		startingBronze = 100,
 		lossPayoutFraction = 0.3,
-		raidCooldownSeconds = 2,
+		-- Doors open: a party arrives this often (the always-open feel test)
+		raidIntervalSeconds = 20,
 	},
 })

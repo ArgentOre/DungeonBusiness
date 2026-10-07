@@ -13,13 +13,14 @@ local Ui = require(script.Parent:WaitForChild("Ui"))
 local RaidReportView = require(script.Parent:WaitForChild("RaidReportView"))
 
 local GetState = Remotes:WaitForChild("GetState") :: RemoteFunction
-local StartRaid = Remotes:WaitForChild("StartRaid") :: RemoteEvent
+local SetDoorsOpen = Remotes:WaitForChild("SetDoorsOpen") :: RemoteEvent
 local Repair = Remotes:WaitForChild("Repair") :: RemoteEvent
 local BuyMob = Remotes:WaitForChild("BuyMob") :: RemoteEvent
 local StateChanged = Remotes:WaitForChild("StateChanged") :: RemoteEvent
 local RaidFinished = Remotes:WaitForChild("RaidFinished") :: RemoteEvent
 
 local EDGE = 16 -- gap between the HUD and the screen edge
+local NOTICE_SECONDS = 5
 
 local function hireableKinds(): { Types.MobKind }
 	local kinds: { Types.MobKind } = {}
@@ -40,22 +41,39 @@ screen.IgnoreGuiInset = false
 screen.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 
 local currentState: Types.PlayerState? = nil
+local doorsAreOpen = false
+local nextPartyAt: number? = nil -- os.clock() time; an estimate, the server decides
+local lastEvents: { Types.RaidEvent } = {}
+local lastReport: Types.RaidReport? = nil
+local noticeShownAt = 0
 
 -- Top left: bronze, and the toggle that hides the big panels
 local bronzePanel = Ui.panel(screen, 200, 8)
 bronzePanel.Position = UDim2.fromOffset(EDGE, EDGE)
 local bronzeLabel = Ui.text(bronzePanel, "… bronze", Ui.STYLES.money)
 
--- Top right: the one main action
-local raidColumn = Instance.new("Frame")
+-- Top right: the one main action, and when the next party is due
+local raidColumn = Ui.group(screen, 6)
 raidColumn.AnchorPoint = Vector2.new(1, 0)
 raidColumn.Position = UDim2.new(1, -EDGE, 0, EDGE)
-raidColumn.Size = UDim2.fromOffset(220, 52)
-raidColumn.BackgroundTransparency = 1
-raidColumn.Parent = screen
-Ui.primaryButton(raidColumn, "Open the doors", function()
-	StartRaid:FireServer()
+raidColumn.Size = UDim2.fromOffset(240, 0)
+local doorsButton: TextButton
+doorsButton = Ui.primaryButton(raidColumn, "Open the doors", function()
+	doorsAreOpen = not doorsAreOpen
+	doorsButton.Text = if doorsAreOpen then "Close the doors" else "Open the doors"
+	nextPartyAt = if doorsAreOpen then os.clock() else nil
+	SetDoorsOpen:FireServer(doorsAreOpen)
 end)
+local doorsStatus = Ui.text(raidColumn, "Doors closed", Ui.STYLES.muted)
+
+-- Top centre: a short notice after each raid; tap it for the full report
+local noticeHolder = Instance.new("Frame")
+noticeHolder.AnchorPoint = Vector2.new(0.5, 0)
+noticeHolder.Position = UDim2.new(0.5, 0, 0, EDGE)
+noticeHolder.Size = UDim2.fromOffset(380, 52)
+noticeHolder.BackgroundTransparency = 1
+noticeHolder.Visible = false
+noticeHolder.Parent = screen
 
 -- Bottom left: the rooms
 local dungeonPanel = Ui.panel(screen, 340, 12)
@@ -160,15 +178,42 @@ local function fillLog(events: { Types.RaidEvent })
 end
 
 local function showLog()
+	fillLog(lastEvents)
 	logPanel.Visible = true
 end
 
-local function onRaidFinished(events: { Types.RaidEvent }, report: Types.RaidReport)
-	fillLog(events)
-	logPanel.Visible = false
-	if currentState then
-		RaidReportView.show(screen, report, currentState, showLog)
+local function openLastReport()
+	noticeHolder.Visible = false
+	if lastReport and currentState then
+		RaidReportView.show(screen, lastReport, currentState, showLog)
 	end
+end
+
+local notice = Ui.secondaryButton(noticeHolder, "", openLastReport)
+notice.Size = UDim2.fromScale(1, 1)
+
+local function doorsStatusText(): string
+	if not doorsAreOpen then
+		return "Doors closed"
+	end
+	local secondsLeft = if nextPartyAt then math.ceil(nextPartyAt - os.clock()) else 0
+	return if secondsLeft > 0 then `Next party in {secondsLeft}s` else "A party is on the way…"
+end
+
+local function tick()
+	doorsStatus.Text = doorsStatusText()
+	if noticeHolder.Visible and os.clock() - noticeShownAt > NOTICE_SECONDS then
+		noticeHolder.Visible = false
+	end
+end
+
+local function onRaidFinished(events: { Types.RaidEvent }, report: Types.RaidReport)
+	lastEvents = events
+	lastReport = report
+	nextPartyAt = os.clock() + Catalog.economy.raidIntervalSeconds
+	notice.Text = RaidReportView.summary(report)
+	noticeShownAt = os.clock()
+	noticeHolder.Visible = true
 end
 
 StateChanged.OnClientEvent:Connect(render)
@@ -178,3 +223,10 @@ local initialState = GetState:InvokeServer() :: Types.PlayerState?
 if initialState then
 	render(initialState)
 end
+
+task.spawn(function()
+	while true do
+		tick()
+		task.wait(0.25)
+	end
+end)
