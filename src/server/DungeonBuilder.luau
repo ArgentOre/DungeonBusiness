@@ -23,29 +23,37 @@ local function findFloor(room: Model): BasePart
 	return floor
 end
 
-local function cloneRoom(kind: Types.RoomKind): Model
+local function findTemplate(kind: Types.RoomKind): Model
 	local template = RoomTemplates:FindFirstChild(kind)
 	assert(template and template:IsA("Model"), `No room template named {kind}`)
-	local room = template:Clone()
+	return template
+end
+
+local function cloneRoom(kind: Types.RoomKind): Model
+	local room = findTemplate(kind):Clone()
 	room.PrimaryPart = findFloor(room)
 	return room
 end
 
+local function roomName(slot: number, kind: Types.RoomKind): string
+	return `{slot} {kind}`
+end
+
+-- Below full condition a room looks worn: its trap is sprung and its mess shows
+local function isWorn(segment: Types.Segment): boolean
+	return segment.condition < 100
+end
+
 -- A missing or incomplete trap is art still in progress, not a broken dungeon:
 -- warn and build the room without it, so the rest of the dungeon still loads
-local function findUsableTrap(room: Model): Instance?
-	local gameplay = room:FindFirstChild("Gameplay")
+local function findUsableTrap(gameplay: Instance?, roomLabel: string): Instance?
 	local trap = gameplay and gameplay:FindFirstChild("Trap")
 	local spot = trap and trap:FindFirstChild("RepairSpot")
 	if not (trap and trap:FindFirstChild("Armed") and trap:FindFirstChild("Sprung") and spot and spot:IsA("BasePart")) then
-		warn(`{room.Name}: needs Gameplay.Trap with Armed, Sprung and a RepairSpot part; built without a trap`)
+		warn(`{roomLabel}: needs Gameplay.Trap with Armed, Sprung and a RepairSpot part; built without a trap`)
 		return nil
 	end
 	return trap
-end
-
-local function isSprung(segment: Types.Segment): boolean
-	return segment.condition < 100
 end
 
 local function removeUnusedTrapState(trap: Instance, sprung: boolean)
@@ -67,12 +75,12 @@ local function addRearmPrompt(trap: Instance, slot: number)
 	prompt.Parent = trap:FindFirstChild("RepairSpot")
 end
 
-local function setUpTrap(room: Model, segment: Types.Segment, slot: number)
-	local trap = findUsableTrap(room)
+local function setUpTrap(gameplay: Instance?, roomLabel: string, segment: Types.Segment, slot: number)
+	local trap = findUsableTrap(gameplay, roomLabel)
 	if not trap then
 		return
 	end
-	local sprung = isSprung(segment)
+	local sprung = isWorn(segment)
 	removeUnusedTrapState(trap, sprung)
 	if sprung then
 		addRearmPrompt(trap, slot)
@@ -80,11 +88,45 @@ local function setUpTrap(room: Model, segment: Types.Segment, slot: number)
 end
 
 -- Mess is optional art: a room without it simply looks tidy, so no warning
-local function removeMessIfTidy(room: Model, segment: Types.Segment)
-	local gameplay = room:FindFirstChild("Gameplay")
+local function removeMessIfTidy(gameplay: Instance?, segment: Types.Segment)
 	local mess = gameplay and gameplay:FindFirstChild("Mess")
-	if mess and segment.condition >= 100 then
+	if mess and not isWorn(segment) then
 		mess:Destroy()
+	end
+end
+
+-- Makes a room's Gameplay parts match its segment: trap state, re-arm prompt, mess
+local function dressGameplay(gameplay: Instance?, roomLabel: string, segment: Types.Segment, slot: number)
+	if Catalog.rooms[segment.kind].repairInWorld then
+		setUpTrap(gameplay, roomLabel, segment, slot)
+	end
+	removeMessIfTidy(gameplay, segment)
+end
+
+-- A fresh copy of the template's Gameplay, placed where it belongs in `room`
+local function freshGameplay(room: Model, kind: Types.RoomKind): Model?
+	local template = findTemplate(kind)
+	local original = template:FindFirstChild("Gameplay")
+	if not (original and original:IsA("Model")) then
+		return nil
+	end
+	local gameplay = original:Clone()
+	local offset = findFloor(template).CFrame:ToObjectSpace(original:GetPivot())
+	gameplay:PivotTo(findFloor(room).CFrame * offset)
+	return gameplay
+end
+
+-- Swaps only the room's Gameplay; floor and walls stay, so nothing flashes and nobody falls
+local function refreshRoom(room: Model, segment: Types.Segment, slot: number)
+	local gameplay = freshGameplay(room, segment.kind)
+	if not gameplay then
+		return
+	end
+	dressGameplay(gameplay, room.Name, segment, slot)
+	local old = room:FindFirstChild("Gameplay")
+	gameplay.Parent = room
+	if old then
+		old:Destroy()
 	end
 end
 
@@ -109,11 +151,8 @@ local function build(dungeon: Types.Dungeon, origin: CFrame): Model
 	local roomCenterZ = HALLWAY_WIDTH / 2 + ROOM_SIZE / 2
 	for slot, segment in dungeon.segments do
 		local room = cloneRoom(segment.kind)
-		room.Name = `{slot} {segment.kind}`
-		if Catalog.rooms[segment.kind].repairInWorld then
-			setUpTrap(room, segment, slot)
-		end
-		removeMessIfTidy(room, segment)
+		room.Name = roomName(slot, segment.kind)
+		dressGameplay(room:FindFirstChild("Gameplay"), room.Name, segment, slot)
 		room:PivotTo(origin * CFrame.new(roomCenterX(slot), -0.5, roomCenterZ))
 		room.Parent = model
 	end
@@ -121,6 +160,34 @@ local function build(dungeon: Types.Dungeon, origin: CFrame): Model
 	return model
 end
 
+local function sameLayout(a: Types.Dungeon, b: Types.Dungeon): boolean
+	if #a.segments ~= #b.segments then
+		return false
+	end
+	for slot, segment in a.segments do
+		if segment.kind ~= b.segments[slot].kind then
+			return false
+		end
+	end
+	return true
+end
+
+-- Brings an existing dungeon Model from `old` to `new` by refreshing only rooms whose look
+-- changed. Returns false when rooms were added, removed or reordered: the caller rebuilds.
+local function update(model: Model, old: Types.Dungeon, new: Types.Dungeon): boolean
+	if not sameLayout(old, new) then
+		return false
+	end
+	for slot, segment in new.segments do
+		local room = model:FindFirstChild(roomName(slot, segment.kind))
+		if room and room:IsA("Model") and isWorn(old.segments[slot]) ~= isWorn(segment) then
+			refreshRoom(room, segment, slot)
+		end
+	end
+	return true
+end
+
 return {
 	build = build,
+	update = update,
 }
