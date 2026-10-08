@@ -10,7 +10,7 @@
       "Remotes": {
         "$className": "Folder",
         "GetState": { "$className": "RemoteFunction" },
-        "StartRaid": { "$className": "RemoteEvent" },
+        "SetDoorsOpen": { "$className": "RemoteEvent" },
         "Repair": { "$className": "RemoteEvent" },
         "BuyMob": { "$className": "RemoteEvent" },
         "StateChanged": { "$className": "RemoteEvent" },

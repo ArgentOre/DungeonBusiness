@@ -18,6 +18,7 @@ local PlotService = require(script.Parent.PlotService)
 
 local states: { [Player]: Types.PlayerState } = {}
 local lastRaidAt: { [Player]: number } = {}
+local doorsOpen: { [Player]: true } = {}
 local rng = Random.new()
 
 local function setState(player: Player, state: Types.PlayerState)
@@ -36,6 +37,7 @@ end
 local function onPlayerRemoving(player: Player)
 	states[player] = nil
 	lastRaidAt[player] = nil
+	doorsOpen[player] = nil
 	PlotService.release(player)
 end
 
@@ -43,20 +45,39 @@ local function onGetState(player: Player): Types.PlayerState?
 	return states[player]
 end
 
-local function raidOnCooldown(player: Player): boolean
+-- The interval is enforced here, not by the loop, so toggling the doors can't speed up raids
+local function partyIsDue(player: Player): boolean
 	local last = lastRaidAt[player]
-	return last ~= nil and os.clock() - last < Catalog.economy.raidCooldownSeconds
+	return last == nil or os.clock() - last >= Catalog.economy.raidIntervalSeconds
 end
 
-local function onStartRaid(player: Player)
+local function runRaid(player: Player)
 	local state = states[player]
-	if not state or raidOnCooldown(player) then
+	if not state or not partyIsDue(player) then
 		return
 	end
 	lastRaidAt[player] = os.clock()
 	local newState, result = PlayRaid.play(state, rng)
 	setState(player, newState)
 	Remotes.RaidFinished:FireClient(player, result.events, RaidReport.make(state, newState, result))
+end
+
+local function onSetDoorsOpen(player: Player, open: unknown)
+	if typeof(open) ~= "boolean" then
+		return
+	end
+	if open then
+		doorsOpen[player] = true
+		runRaid(player)
+	else
+		doorsOpen[player] = nil
+	end
+end
+
+local function runDueRaids()
+	for player in doorsOpen do
+		runRaid(player)
+	end
 end
 
 local function tryRepair(player: Player, slot: number, points: number)
@@ -111,7 +132,14 @@ for _, player in Players:GetPlayers() do
 end
 
 Remotes.GetState.OnServerInvoke = onGetState
-Remotes.StartRaid.OnServerEvent:Connect(onStartRaid)
+Remotes.SetDoorsOpen.OnServerEvent:Connect(onSetDoorsOpen)
 Remotes.Repair.OnServerEvent:Connect(onRepair)
 Remotes.BuyMob.OnServerEvent:Connect(onBuyMob)
 ProximityPromptService.PromptTriggered:Connect(onPromptTriggered)
+
+task.spawn(function()
+	while true do
+		task.wait(1)
+		runDueRaids()
+	end
+end)
