@@ -24,14 +24,14 @@ local function roomName(state: Types.PlayerState, slot: number): string
 end
 
 local function headline(report: Types.RaidReport): string
-	return if report.won then "The dungeon held!" else "The party got away!"
+	return if report.won then "The dungeon held!" else `They stole {report.treasureTaken} treasure!`
 end
 
 local function whereItEnded(report: Types.RaidReport, state: Types.PlayerState): string
 	if report.won then
 		return `They gave up in the {roomName(state, report.endSlot)}.`
 	end
-	return "They escaped with some treasure."
+	return "The party got away. Restock the treasure, or visitors will stop coming."
 end
 
 local function signed(amount: number): string

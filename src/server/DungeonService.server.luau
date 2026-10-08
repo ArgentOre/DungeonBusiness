@@ -13,6 +13,7 @@ local StartingState = require(Logic.StartingState)
 local PlayRaid = require(Logic.PlayRaid)
 local RaidReport = require(Logic.RaidReport)
 local Repair = require(Logic.Repair)
+local Restock = require(Logic.Restock)
 local Hire = require(Logic.Hire)
 local PlotService = require(script.Parent.PlotService)
 
@@ -53,7 +54,7 @@ end
 
 local function runRaid(player: Player)
 	local state = states[player]
-	if not state or not partyIsDue(player) then
+	if not state or not partyIsDue(player) or not Rules.attractsParties(state) then
 		return
 	end
 	lastRaidAt[player] = os.clock()
@@ -104,6 +105,14 @@ local function onPromptTriggered(prompt: ProximityPrompt, player: Player)
 	tryRepair(player, slot, Rules.affordableRepair(state, slot))
 end
 
+local function onRestock(player: Player, amount: unknown)
+	local state = states[player]
+	if not state or typeof(amount) ~= "number" or not Rules.canRestock(state, amount) then
+		return
+	end
+	setState(player, Restock.apply(state, amount))
+end
+
 local function toMobKind(name: string): Types.MobKind?
 	for kind: Types.MobKind in Catalog.mobs do
 		if kind == name then
@@ -135,6 +144,7 @@ Remotes.GetState.OnServerInvoke = onGetState
 Remotes.SetDoorsOpen.OnServerEvent:Connect(onSetDoorsOpen)
 Remotes.Repair.OnServerEvent:Connect(onRepair)
 Remotes.BuyMob.OnServerEvent:Connect(onBuyMob)
+Remotes.Restock.OnServerEvent:Connect(onRestock)
 ProximityPromptService.PromptTriggered:Connect(onPromptTriggered)
 
 task.spawn(function()

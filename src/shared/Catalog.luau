@@ -13,9 +13,9 @@ local function deepFreeze<T>(value: T): T
 end
 
 local rooms: { [Types.RoomKind]: Types.RoomStats } = {
-	TrapRoom = { displayName = "Trap Room", trapDamage = 10, mobSlots = 0, wearPerRaid = 13, repairCostPerPoint = 1, repairInWorld = true },
-	Crypt = { displayName = "Crypt", trapDamage = 0, mobSlots = 3, wearPerRaid = 5, repairCostPerPoint = 1, repairInWorld = false },
-	TreasureRoom = { displayName = "Treasure Room", trapDamage = 0, mobSlots = 1, wearPerRaid = 3, repairCostPerPoint = 2, repairInWorld = false },
+	TrapRoom = { displayName = "Trap Room", trapDamage = 10, mobSlots = 0, wearPerRaid = 13, repairCostPerPoint = 1, repairInWorld = true, holdsTreasure = false },
+	Crypt = { displayName = "Crypt", trapDamage = 0, mobSlots = 3, wearPerRaid = 5, repairCostPerPoint = 1, repairInWorld = false, holdsTreasure = false },
+	TreasureRoom = { displayName = "Treasure Room", trapDamage = 0, mobSlots = 1, wearPerRaid = 3, repairCostPerPoint = 2, repairInWorld = false, holdsTreasure = true },
 }
 
 local mobs: { [Types.MobKind]: Types.MobStats } = {
@@ -46,5 +46,10 @@ return deepFreeze({
 		lossPayoutFraction = 0.3,
 		-- Doors open: a party arrives this often (the always-open feel test)
 		raidIntervalSeconds = 20,
+		-- Treasure is the lure: no treasure, no visitors. An escaping party takes some.
+		treasureMax = 100,
+		treasureStart = 100,
+		treasureTakenPerEscape = 20,
+		restockCostPerTreasure = 1,
 	},
 })

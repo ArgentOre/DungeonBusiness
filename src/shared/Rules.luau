@@ -53,7 +53,36 @@ local function canBuyMob(state: Types.PlayerState, slot: number, kind: Types.Mob
 	return true
 end
 
+local function attractsParties(state: Types.PlayerState): boolean
+	return state.treasure > 0
+end
+
+local function restockCost(amount: number): number
+	return amount * Catalog.economy.restockCostPerTreasure
+end
+
+local function canRestock(state: Types.PlayerState, amount: number): (boolean, string?)
+	if amount <= 0 or amount ~= math.floor(amount) then
+		return false, "Restock amount must be a whole number above zero"
+	end
+	if state.treasure + amount > Catalog.economy.treasureMax then
+		return false, "That's more treasure than the room holds"
+	end
+	if restockCost(amount) > state.bronze then
+		return false, "Not enough bronze"
+	end
+	return true
+end
+
+local function affordableRestock(state: Types.PlayerState): number
+	return math.min(Catalog.economy.treasureMax - state.treasure, state.bronze // restockCost(1))
+end
+
 return {
+	attractsParties = attractsParties,
+	restockCost = restockCost,
+	canRestock = canRestock,
+	affordableRestock = affordableRestock,
 	repairCost = repairCost,
 	canRepair = canRepair,
 	affordableRepair = affordableRepair,
