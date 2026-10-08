@@ -12,6 +12,7 @@ local SPAWN_HEIGHT = 4
 type Plot = {
 	index: number,
 	model: Model?,
+	shown: Types.Dungeon?, -- what `model` currently shows
 	spawnConnection: RBXScriptConnection,
 }
 
@@ -50,17 +51,13 @@ local function claim(player: Player)
 	local spawnConnection = player.CharacterAdded:Connect(function(character)
 		moveToEntrance(character, index)
 	end)
-	plots[player] = { index = index, model = nil, spawnConnection = spawnConnection }
+	plots[player] = { index = index, model = nil, shown = nil, spawnConnection = spawnConnection }
 	if player.Character then
 		task.spawn(moveToEntrance, player.Character, index)
 	end
 end
 
-local function show(player: Player, dungeon: Types.Dungeon)
-	local plot = plots[player]
-	if not plot then
-		return
-	end
+local function rebuild(player: Player, plot: Plot, dungeon: Types.Dungeon)
 	local oldModel = plot.model
 	local model = DungeonBuilder.build(dungeon, plotOrigin(plot.index))
 	model.Name = `{player.Name}'s Dungeon`
@@ -71,6 +68,19 @@ local function show(player: Player, dungeon: Types.Dungeon)
 	if oldModel then
 		oldModel:Destroy()
 	end
+end
+
+-- Most changes only touch a few rooms, so update in place; a full rebuild makes the world flash
+local function show(player: Player, dungeon: Types.Dungeon)
+	local plot = plots[player]
+	if not plot then
+		return
+	end
+	local model, shown = plot.model, plot.shown
+	if not (model and shown and DungeonBuilder.update(model, shown, dungeon)) then
+		rebuild(player, plot, dungeon)
+	end
+	plot.shown = dungeon
 end
 
 local function owns(player: Player, instance: Instance): boolean

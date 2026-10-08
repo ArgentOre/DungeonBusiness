@@ -158,13 +158,21 @@ local function secondaryButton(parent: Instance, content: string, onClick: () ->
 	return btn
 end
 
--- Not pink, because it can't be used right now
-local function disable(btn: TextButton)
-	btn.AutoButtonColor = false
-	btn.TextColor3 = THEME.mutedText
+-- A secondary button is pink when it can be used and grey when it can't
+local function setEnabled(btn: TextButton, enabled: boolean)
+	btn.AutoButtonColor = enabled
+	btn.TextColor3 = if enabled then THEME.accent else THEME.mutedText
 	local stroke = btn:FindFirstChildOfClass("UIStroke")
 	if stroke then
-		stroke.Color = THEME.panelBorder
+		stroke.Color = if enabled then THEME.accent else THEME.panelBorder
+	end
+end
+
+local function setBar(track: Frame, fraction: number, color: Color3)
+	local fill = track:FindFirstChildOfClass("Frame")
+	if fill then
+		fill.Size = UDim2.fromScale(math.clamp(fraction, 0, 1), 1)
+		fill.BackgroundColor3 = color
 	end
 end
 
@@ -186,6 +194,7 @@ return {
 	bar = bar,
 	primaryButton = primaryButton,
 	secondaryButton = secondaryButton,
-	disable = disable,
+	setEnabled = setEnabled,
+	setBar = setBar,
 	clear = clear,
 }
