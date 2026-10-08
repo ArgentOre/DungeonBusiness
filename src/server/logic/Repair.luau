@@ -9,6 +9,7 @@ local function apply(state: Types.PlayerState, slot: number, points: number): Ty
 	segments[slot] = { kind = segment.kind, condition = segment.condition + points, mobs = segment.mobs }
 	return {
 		bronze = state.bronze - Rules.repairCost(segment, points),
+		treasure = state.treasure,
 		dungeon = { segments = segments },
 	}
 end

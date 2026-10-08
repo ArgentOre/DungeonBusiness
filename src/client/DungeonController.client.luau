@@ -7,6 +7,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Types = require(Shared:WaitForChild("Types"))
 local Catalog = require(Shared:WaitForChild("Catalog"))
+local Rules = require(Shared:WaitForChild("Rules"))
 local EventText = require(Shared:WaitForChild("EventText"))
 local Ui = require(script.Parent:WaitForChild("Ui"))
 local RaidReportView = require(script.Parent:WaitForChild("RaidReportView"))
@@ -106,6 +107,9 @@ end
 local function doorsStatusText(): string
 	if not doorsAreOpen then
 		return "Doors closed"
+	end
+	if currentState and not Rules.attractsParties(currentState) then
+		return "No treasure, no visitors"
 	end
 	local secondsLeft = if nextPartyAt then math.ceil(nextPartyAt - os.clock()) else 0
 	return if secondsLeft > 0 then `Next party in {secondsLeft}s` else "A party is on the way…"

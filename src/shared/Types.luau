@@ -19,6 +19,7 @@ export type Dungeon = {
 
 export type PlayerState = {
 	bronze: number,
+	treasure: number, -- stocked loot; adventurers only come while there is some
 	dungeon: Dungeon,
 }
 
@@ -54,6 +55,7 @@ export type RaidReport = {
 	earned: number,
 	wagesPaid: number,
 	endSlot: number, -- room where the party was defeated, or the last room if it escaped
+	treasureTaken: number,
 }
 
 export type RoomStats = {
@@ -63,6 +65,7 @@ export type RoomStats = {
 	wearPerRaid: number,
 	repairCostPerPoint: number,
 	repairInWorld: boolean, -- repaired by walking to it, not from the panel (Milestone 1, step 1a)
+	holdsTreasure: boolean, -- where the dungeon's treasure is kept and restocked
 }
 
 export type MobStats = {

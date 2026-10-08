@@ -17,7 +17,11 @@ local function create(): Types.PlayerState
 	for _, starter in Catalog.starterLayout do
 		table.insert(segments, buildSegment(starter))
 	end
-	return { bronze = Catalog.economy.startingBronze, dungeon = { segments = segments } }
+	return {
+		bronze = Catalog.economy.startingBronze,
+		treasure = Catalog.economy.treasureStart,
+		dungeon = { segments = segments },
+	}
 end
 
 return {

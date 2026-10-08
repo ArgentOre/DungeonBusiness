@@ -14,6 +14,7 @@ local function apply(state: Types.PlayerState, slot: number, kind: Types.MobKind
 	segments[slot] = { kind = segment.kind, condition = segment.condition, mobs = mobs }
 	return {
 		bronze = state.bronze - hireCost,
+		treasure = state.treasure,
 		dungeon = { segments = segments },
 	}
 end

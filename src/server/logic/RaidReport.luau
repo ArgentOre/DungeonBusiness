@@ -18,6 +18,7 @@ local function make(before: Types.PlayerState, after: Types.PlayerState, result:
 		earned = earned,
 		wagesPaid = before.bronze + earned - after.bronze,
 		endSlot = endSlot(result.events),
+		treasureTaken = before.treasure - after.treasure,
 	}
 end
 
