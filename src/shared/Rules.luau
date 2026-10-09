@@ -20,7 +20,7 @@ local function canRepair(state: Types.PlayerState, slot: number, points: number)
 	if repairCost(segment, points) > state.bronze then
 		return false, "Not enough bronze"
 	end
-	return true
+	return true, nil
 end
 
 local function affordableRepair(state: Types.PlayerState, slot: number): number
@@ -50,15 +50,15 @@ local function canBuyMob(state: Types.PlayerState, slot: number, kind: Types.Mob
 	if hireCost > state.bronze then
 		return false, "Not enough bronze"
 	end
-	return true
+	return true, nil
 end
 
--- Junk never runs out, so parties always come; with no real treasure only rookies do
-local function onlyJunk(state: Types.PlayerState): boolean
+-- Parties still come to an empty chest, but only rookies
+local function chestEmpty(state: Types.PlayerState): boolean
 	return state.treasure <= 0
 end
 
--- How strongly the treasure draws visitors, 0 (only junk) to 1 (a full treasure room).
+-- How strongly the treasure draws visitors, 0 (an empty chest) to 1 (a full treasure room).
 -- More treasure brings stronger parties carrying better gear.
 local function lure(state: Types.PlayerState): number
 	return math.clamp(state.treasure / Catalog.economy.treasureMax, 0, 1)
@@ -75,7 +75,7 @@ local function canSell(state: Types.PlayerState, amount: number): (boolean, stri
 	if amount > state.spoils then
 		return false, "Not that many spoils"
 	end
-	return true
+	return true, nil
 end
 
 local function stockable(state: Types.PlayerState): number
@@ -92,11 +92,11 @@ local function canStock(state: Types.PlayerState, amount: number): (boolean, str
 	if state.treasure + amount > Catalog.economy.treasureMax then
 		return false, "That's more treasure than the room holds"
 	end
-	return true
+	return true, nil
 end
 
 return {
-	onlyJunk = onlyJunk,
+	chestEmpty = chestEmpty,
 	lure = lure,
 	canSell = canSell,
 	stockable = stockable,

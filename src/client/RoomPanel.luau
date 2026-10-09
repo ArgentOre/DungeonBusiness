@@ -163,9 +163,9 @@ end
 
 local function updateTreasure(treasure: Treasure, state: Types.PlayerState)
 	local max = Catalog.economy.treasureMax
-	local junk = Rules.onlyJunk(state)
-	treasure.label.Text = if junk then "Only junk left: rookies only" else `Treasure {state.treasure}/{max}`
-	treasure.label.TextColor3 = if junk then Ui.THEME.needsFix else Ui.THEME.bronze
+	local empty = Rules.chestEmpty(state)
+	treasure.label.Text = if empty then "Only junk left: rookies only" else `Treasure {state.treasure}/{max}`
+	treasure.label.TextColor3 = if empty then Ui.THEME.needsFix else Ui.THEME.bronze
 	Ui.setBar(treasure.bar, state.treasure / max, Ui.THEME.bronze)
 	treasure.spoils.Text = `Spoils: {state.spoils}`
 	local stockable = Rules.stockable(state)

@@ -108,7 +108,7 @@ local function doorsStatusText(): string
 	if not doorsAreOpen then
 		return "Doors closed"
 	end
-	if currentState and Rules.onlyJunk(currentState) then
+	if currentState and Rules.chestEmpty(currentState) then
 		return "Only junk to steal: rookies only"
 	end
 	local secondsLeft = if nextPartyAt then math.ceil(nextPartyAt - os.clock()) else 0

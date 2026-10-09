@@ -54,7 +54,7 @@ export type RaidResult = {
 
 export type RaidReport = {
 	won: boolean,
-	rookies: boolean, -- the dungeon had only junk, so only rookies came
+	rookies: boolean, -- the chest was empty, so only rookies came
 	spoilsDropped: number,
 	wagesPaid: number,
 	endSlot: number, -- room where the party was defeated, or the last room if it escaped

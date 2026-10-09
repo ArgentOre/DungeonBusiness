@@ -105,7 +105,7 @@ local function simulate(policy: Policy, start: Types.PlayerState, raids: number,
 	local state = start
 	local stats: Stats = { wins = 0, rookieRaids = 0, lowestBronze = state.bronze }
 	for raid = 1, raids do
-		stats.rookieRaids += if Rules.onlyJunk(state) then 1 else 0
+		stats.rookieRaids += if Rules.chestEmpty(state) then 1 else 0
 		local result
 		state, result = PlayRaid.play(state, rng)
 		stats.wins += if result.won then 1 else 0
