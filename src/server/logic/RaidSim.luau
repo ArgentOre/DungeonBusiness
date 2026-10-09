@@ -51,7 +51,7 @@ local function runSegment(segment: Types.Segment, slot: number, party: Types.Par
 	addEvent(events, { kind = "EnterRoom", slot = slot })
 	partyHp = springTrap(segment, slot, partyHp, events)
 	partyHp = fightMobs(segment, slot, party, partyHp, events)
-	local wear = Catalog.rooms[segment.kind].wearPerRaid
+	local wear = math.round(Catalog.rooms[segment.kind].wearPerRaid * party.strength)
 	addEvent(events, { kind = "RoomDamaged", slot = slot, amount = wear })
 	return partyHp, { kind = segment.kind, condition = math.max(0, segment.condition - wear), mobs = segment.mobs }
 end

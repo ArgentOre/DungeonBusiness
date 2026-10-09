@@ -53,36 +53,54 @@ local function canBuyMob(state: Types.PlayerState, slot: number, kind: Types.Mob
 	return true
 end
 
-local function attractsParties(state: Types.PlayerState): boolean
-	return state.treasure > 0
+-- Junk never runs out, so parties always come; with no real treasure only rookies do
+local function onlyJunk(state: Types.PlayerState): boolean
+	return state.treasure <= 0
 end
 
-local function restockCost(amount: number): number
-	return amount * Catalog.economy.restockCostPerTreasure
+-- How strongly the treasure draws visitors, 0 (only junk) to 1 (a full treasure room).
+-- More treasure brings stronger parties carrying better gear.
+local function lure(state: Types.PlayerState): number
+	return math.clamp(state.treasure / Catalog.economy.treasureMax, 0, 1)
 end
 
-local function canRestock(state: Types.PlayerState, amount: number): (boolean, string?)
-	if amount <= 0 or amount ~= math.floor(amount) then
-		return false, "Restock amount must be a whole number above zero"
+local function isWholeAmount(amount: number): boolean
+	return amount > 0 and amount == math.floor(amount)
+end
+
+local function canSell(state: Types.PlayerState, amount: number): (boolean, string?)
+	if not isWholeAmount(amount) then
+		return false, "Amount must be a whole number above zero"
 	end
-	if state.treasure + amount > Catalog.economy.treasureMax then
-		return false, "That's more treasure than the room holds"
-	end
-	if restockCost(amount) > state.bronze then
-		return false, "Not enough bronze"
+	if amount > state.spoils then
+		return false, "Not that many spoils"
 	end
 	return true
 end
 
-local function affordableRestock(state: Types.PlayerState): number
-	return math.min(Catalog.economy.treasureMax - state.treasure, state.bronze // restockCost(1))
+local function stockable(state: Types.PlayerState): number
+	return math.min(state.spoils, Catalog.economy.treasureMax - state.treasure)
+end
+
+local function canStock(state: Types.PlayerState, amount: number): (boolean, string?)
+	if not isWholeAmount(amount) then
+		return false, "Amount must be a whole number above zero"
+	end
+	if amount > state.spoils then
+		return false, "Not that many spoils"
+	end
+	if state.treasure + amount > Catalog.economy.treasureMax then
+		return false, "That's more treasure than the room holds"
+	end
+	return true
 end
 
 return {
-	attractsParties = attractsParties,
-	restockCost = restockCost,
-	canRestock = canRestock,
-	affordableRestock = affordableRestock,
+	onlyJunk = onlyJunk,
+	lure = lure,
+	canSell = canSell,
+	stockable = stockable,
+	canStock = canStock,
 	repairCost = repairCost,
 	canRepair = canRepair,
 	affordableRepair = affordableRepair,

@@ -19,13 +19,15 @@ export type Dungeon = {
 
 export type PlayerState = {
 	bronze: number,
-	treasure: number, -- stocked loot; adventurers only come while there is some
+	treasure: number, -- value stocked in the treasure room: the lure. With none, only rookies come
+	spoils: number, -- value of what defeated adventurers left behind, waiting to be sold or stocked
 	dungeon: Dungeon,
 }
 
 export type Party = {
 	hp: number,
 	power: number,
+	strength: number, -- 1 for a full party; rookies are weaker and clumsier, so they wear rooms less
 }
 
 export type RaidEventKind =
@@ -52,7 +54,8 @@ export type RaidResult = {
 
 export type RaidReport = {
 	won: boolean,
-	earned: number,
+	rookies: boolean, -- the dungeon had only junk, so only rookies came
+	spoilsDropped: number,
 	wagesPaid: number,
 	endSlot: number, -- room where the party was defeated, or the last room if it escaped
 	treasureTaken: number,
@@ -65,7 +68,7 @@ export type RoomStats = {
 	wearPerRaid: number,
 	repairCostPerPoint: number,
 	repairInWorld: boolean, -- repaired by walking to it, not from the panel (Milestone 1, step 1a)
-	holdsTreasure: boolean, -- where the dungeon's treasure is kept and restocked
+	holdsTreasure: boolean, -- where the dungeon's treasure and spoils are kept
 }
 
 export type MobStats = {

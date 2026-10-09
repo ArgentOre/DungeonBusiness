@@ -5,7 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Types = require(Shared:WaitForChild("Types"))
 local Catalog = require(Shared:WaitForChild("Catalog"))
-local Ui = require(script.Parent.Ui)
+local Ui = require(script.Parent:WaitForChild("Ui"))
 
 local CARD_WIDTH = 420
 
@@ -24,14 +24,17 @@ local function roomName(state: Types.PlayerState, slot: number): string
 end
 
 local function headline(report: Types.RaidReport): string
-	return if report.won then "The dungeon held!" else `They stole {report.treasureTaken} treasure!`
+	if report.won then
+		return if report.rookies then "Rookies defeated!" else "The dungeon held!"
+	end
+	return if report.treasureTaken > 0 then `They stole {report.treasureTaken} treasure!` else "They got away!"
 end
 
 local function whereItEnded(report: Types.RaidReport, state: Types.PlayerState): string
 	if report.won then
 		return `They gave up in the {roomName(state, report.endSlot)}.`
 	end
-	return "The party got away. Restock the treasure, or visitors will stop coming."
+	return "They kept their gear, so nothing dropped. Stock spoils to refill the treasure."
 end
 
 local function signed(amount: number): string
@@ -40,9 +43,9 @@ end
 
 local function addPayday(parent: Frame, report: Types.RaidReport)
 	local box = Ui.group(parent, 4)
-	Ui.text(box, `Loot  {signed(report.earned)} bronze`, Ui.STYLES.money)
+	Ui.text(box, `Spoils  {signed(report.spoilsDropped)}`, Ui.STYLES.money)
+	Ui.text(box, "Sell them for bronze, or stock them as treasure, in the Treasure Room.", Ui.STYLES.muted)
 	Ui.text(box, `Wages  −{report.wagesPaid} bronze`, Ui.STYLES.muted)
-	Ui.text(box, `Payday  {signed(report.earned - report.wagesPaid)} bronze`, Ui.STYLES.money)
 end
 
 local function fixHint(segment: Types.Segment): string
@@ -67,7 +70,10 @@ end
 
 -- One line for the notice after each raid; tapping the notice opens the full card
 local function summary(report: Types.RaidReport): string
-	return `{headline(report)}  {signed(report.earned - report.wagesPaid)} bronze`
+	if report.spoilsDropped > 0 then
+		return `{headline(report)}  +{report.spoilsDropped} spoils`
+	end
+	return headline(report)
 end
 
 local function show(screen: ScreenGui, report: Types.RaidReport, state: Types.PlayerState, onShowLog: () -> ())

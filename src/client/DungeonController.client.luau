@@ -108,8 +108,8 @@ local function doorsStatusText(): string
 	if not doorsAreOpen then
 		return "Doors closed"
 	end
-	if currentState and not Rules.attractsParties(currentState) then
-		return "No treasure, no visitors"
+	if currentState and Rules.onlyJunk(currentState) then
+		return "Only junk to steal: rookies only"
 	end
 	local secondsLeft = if nextPartyAt then math.ceil(nextPartyAt - os.clock()) else 0
 	return if secondsLeft > 0 then `Next party in {secondsLeft}s` else "A party is on the way…"

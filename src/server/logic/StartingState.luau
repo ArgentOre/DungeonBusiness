@@ -20,6 +20,7 @@ local function create(): Types.PlayerState
 	return {
 		bronze = Catalog.economy.startingBronze,
 		treasure = Catalog.economy.treasureStart,
+		spoils = 0,
 		dungeon = { segments = segments },
 	}
 end
