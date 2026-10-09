@@ -40,7 +40,7 @@ return deepFreeze({
 		hpPerPower = 1,
 		lootPerPower = 1.75, -- tuned with EconomySim.runAll (2026-10-09)
 		mobHpWeight = 0.1,
-		-- The treasure is a dial: with only junk, rookies come (weaker, cheap gear);
+		-- The treasure is a dial: to an empty chest, rookies come (weaker, cheap gear);
 		-- a full treasure room draws full-strength parties. Living on rookies is a
 		-- way back, never a strategy.
 		rookieStrength = 0.3,

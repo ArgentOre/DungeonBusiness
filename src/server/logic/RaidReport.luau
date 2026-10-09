@@ -14,7 +14,7 @@ end
 local function make(before: Types.PlayerState, after: Types.PlayerState, result: Types.RaidResult): Types.RaidReport
 	return {
 		won = result.won,
-		rookies = Rules.onlyJunk(before),
+		rookies = Rules.chestEmpty(before),
 		spoilsDropped = after.spoils - before.spoils,
 		wagesPaid = before.bronze - after.bronze,
 		endSlot = endSlot(result.events),

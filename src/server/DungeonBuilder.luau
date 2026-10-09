@@ -23,6 +23,12 @@ local function findFloor(room: Model): BasePart
 	return floor
 end
 
+local function findGameplay(room: Model): Model
+	local gameplay = room:FindFirstChild("Gameplay")
+	assert(gameplay and gameplay:IsA("Model"), `Room template {room.Name} needs a Gameplay model`)
+	return gameplay
+end
+
 local function findTemplate(kind: Types.RoomKind): Model
 	local template = RoomTemplates:FindFirstChild(kind)
 	assert(template and template:IsA("Model"), `No room template named {kind}`)
@@ -46,8 +52,8 @@ end
 
 -- A missing or incomplete trap is art still in progress, not a broken dungeon:
 -- warn and build the room without it, so the rest of the dungeon still loads
-local function findUsableTrap(gameplay: Instance?, roomLabel: string): Instance?
-	local trap = gameplay and gameplay:FindFirstChild("Trap")
+local function findUsableTrap(gameplay: Model, roomLabel: string): Instance?
+	local trap = gameplay:FindFirstChild("Trap")
 	local spot = trap and trap:FindFirstChild("RepairSpot")
 	if not (trap and trap:FindFirstChild("Armed") and trap:FindFirstChild("Sprung") and spot and spot:IsA("BasePart")) then
 		warn(`{roomLabel}: needs Gameplay.Trap with Armed, Sprung and a RepairSpot part; built without a trap`)
@@ -75,7 +81,7 @@ local function addRearmPrompt(trap: Instance, slot: number)
 	prompt.Parent = trap:FindFirstChild("RepairSpot")
 end
 
-local function setUpTrap(gameplay: Instance?, roomLabel: string, segment: Types.Segment, slot: number)
+local function setUpTrap(gameplay: Model, roomLabel: string, segment: Types.Segment, slot: number)
 	local trap = findUsableTrap(gameplay, roomLabel)
 	if not trap then
 		return
@@ -88,15 +94,15 @@ local function setUpTrap(gameplay: Instance?, roomLabel: string, segment: Types.
 end
 
 -- Mess is optional art: a room without it simply looks tidy, so no warning
-local function removeMessIfTidy(gameplay: Instance?, segment: Types.Segment)
-	local mess = gameplay and gameplay:FindFirstChild("Mess")
+local function removeMessIfTidy(gameplay: Model, segment: Types.Segment)
+	local mess = gameplay:FindFirstChild("Mess")
 	if mess and not isWorn(segment) then
 		mess:Destroy()
 	end
 end
 
 -- Makes a room's Gameplay parts match its segment: trap state, re-arm prompt, mess
-local function dressGameplay(gameplay: Instance?, roomLabel: string, segment: Types.Segment, slot: number)
+local function dressGameplay(gameplay: Model, roomLabel: string, segment: Types.Segment, slot: number)
 	if Catalog.rooms[segment.kind].repairInWorld then
 		setUpTrap(gameplay, roomLabel, segment, slot)
 	end
@@ -104,12 +110,9 @@ local function dressGameplay(gameplay: Instance?, roomLabel: string, segment: Ty
 end
 
 -- A fresh copy of the template's Gameplay, placed where it belongs in `room`
-local function freshGameplay(room: Model, kind: Types.RoomKind): Model?
+local function freshGameplay(room: Model, kind: Types.RoomKind): Model
 	local template = findTemplate(kind)
-	local original = template:FindFirstChild("Gameplay")
-	if not (original and original:IsA("Model")) then
-		return nil
-	end
+	local original = findGameplay(template)
 	local gameplay = original:Clone()
 	local offset = findFloor(template).CFrame:ToObjectSpace(original:GetPivot())
 	gameplay:PivotTo(findFloor(room).CFrame * offset)
@@ -119,15 +122,10 @@ end
 -- Swaps only the room's Gameplay; floor and walls stay, so nothing flashes and nobody falls
 local function refreshRoom(room: Model, segment: Types.Segment, slot: number)
 	local gameplay = freshGameplay(room, segment.kind)
-	if not gameplay then
-		return
-	end
 	dressGameplay(gameplay, room.Name, segment, slot)
-	local old = room:FindFirstChild("Gameplay")
+	local old = findGameplay(room)
 	gameplay.Parent = room
-	if old then
-		old:Destroy()
-	end
+	old:Destroy()
 end
 
 local function roomCenterX(slot: number): number
@@ -152,7 +150,7 @@ local function build(dungeon: Types.Dungeon, origin: CFrame): Model
 	for slot, segment in dungeon.segments do
 		local room = cloneRoom(segment.kind)
 		room.Name = roomName(slot, segment.kind)
-		dressGameplay(room:FindFirstChild("Gameplay"), room.Name, segment, slot)
+		dressGameplay(findGameplay(room), room.Name, segment, slot)
 		room:PivotTo(origin * CFrame.new(roomCenterX(slot), -0.5, roomCenterZ))
 		room.Parent = model
 	end
@@ -173,14 +171,18 @@ local function sameLayout(a: Types.Dungeon, b: Types.Dungeon): boolean
 end
 
 -- Brings an existing dungeon Model from `old` to `new` by refreshing only rooms whose look
--- changed. Returns false when rooms were added, removed or reordered: the caller rebuilds.
+-- changed. Returns false when rooms were added, removed or reordered, or when a room is
+-- missing from the Model: either way the world doesn't match, so the caller rebuilds.
 local function update(model: Model, old: Types.Dungeon, new: Types.Dungeon): boolean
 	if not sameLayout(old, new) then
 		return false
 	end
 	for slot, segment in new.segments do
 		local room = model:FindFirstChild(roomName(slot, segment.kind))
-		if room and room:IsA("Model") and isWorn(old.segments[slot]) ~= isWorn(segment) then
+		if not (room and room:IsA("Model")) then
+			return false
+		end
+		if isWorn(old.segments[slot]) ~= isWorn(segment) then
 			refreshRoom(room, segment, slot)
 		end
 	end

@@ -57,6 +57,9 @@ local function runSegment(segment: Types.Segment, slot: number, party: Types.Par
 end
 
 local function simulate(dungeon: Types.Dungeon, party: Types.Party): Types.RaidResult
+	-- A fight ends when the party or the mobs fall. Mobs in a 0% room deal no damage,
+	-- so the party must be able to hurt them, or fightMobs never returns.
+	assert(party.power >= 1, "A party with no power could never finish a fight")
 	local events: Events = {}
 	local after: { Types.Segment } = {}
 	local partyHp = party.hp
