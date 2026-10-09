@@ -3,7 +3,7 @@
 -- fixing from the new state, so it isn't repeated here.
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Types = require(Shared.Types)
-local Payout = require(script.Parent.Payout)
+local Rules = require(Shared.Rules)
 
 -- A raid's last event is always PartyDefeated or PartyEscaped, and both carry the room
 local function endSlot(events: { Types.RaidEvent }): number
@@ -12,11 +12,11 @@ local function endSlot(events: { Types.RaidEvent }): number
 end
 
 local function make(before: Types.PlayerState, after: Types.PlayerState, result: Types.RaidResult): Types.RaidReport
-	local earned = Payout.amount(result)
 	return {
 		won = result.won,
-		earned = earned,
-		wagesPaid = before.bronze + earned - after.bronze,
+		rookies = Rules.onlyJunk(before),
+		spoilsDropped = after.spoils - before.spoils,
+		wagesPaid = before.bronze - after.bronze,
 		endSlot = endSlot(result.events),
 		treasureTaken = before.treasure - after.treasure,
 	}

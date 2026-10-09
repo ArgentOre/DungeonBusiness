@@ -24,12 +24,14 @@ local function dungeonPower(dungeon: Types.Dungeon): number
 	return power
 end
 
-local function make(dungeon: Types.Dungeon, rng: Random): Types.Party
+-- `strength` scales the party: 1 for a normal party, less for rookies
+local function make(dungeon: Types.Dungeon, rng: Random, strength: number): Types.Party
 	local spread = rng:NextNumber(Catalog.party.powerSpreadMin, Catalog.party.powerSpreadMax)
-	local power = math.max(1, math.round(dungeonPower(dungeon) * spread))
+	local power = math.max(1, math.round(dungeonPower(dungeon) * spread * strength))
 	return {
 		power = power,
 		hp = power * Catalog.party.hpPerPower,
+		strength = strength,
 	}
 end
 

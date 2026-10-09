@@ -10,6 +10,7 @@ local function apply(state: Types.PlayerState, slot: number, points: number): Ty
 	return {
 		bronze = state.bronze - Rules.repairCost(segment, points),
 		treasure = state.treasure,
+		spoils = state.spoils,
 		dungeon = { segments = segments },
 	}
 end

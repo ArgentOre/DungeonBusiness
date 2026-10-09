@@ -38,18 +38,26 @@ return deepFreeze({
 		powerSpreadMin = 0.6,
 		powerSpreadMax = 1.4,
 		hpPerPower = 1,
-		lootPerPower = 1.25,
+		lootPerPower = 1.75, -- tuned with EconomySim.runAll (2026-10-09)
 		mobHpWeight = 0.1,
+		-- The treasure is a dial: with only junk, rookies come (weaker, cheap gear);
+		-- a full treasure room draws full-strength parties. Living on rookies is a
+		-- way back, never a strategy.
+		rookieStrength = 0.3,
+		rookieGearValue = 0.5,
 	},
 	economy = {
 		startingBronze = 100,
-		lossPayoutFraction = 0.3,
 		-- Doors open: a party arrives this often (the always-open feel test)
 		raidIntervalSeconds = 20,
-		-- Treasure is the lure: no treasure, no visitors. An escaping party takes some.
+		-- Treasure is the lure. Defeated parties drop spoils, which are sold for bronze
+		-- or stocked as treasure. An escaping party steals some treasure.
 		treasureMax = 100,
 		treasureStart = 100,
 		treasureTakenPerEscape = 20,
-		restockCostPerTreasure = 1,
+		bronzePerSpoil = 1,
+		-- Staff patch any room below this condition for free after each raid,
+		-- so a run-down dungeon can still beat rookies and a broke player can recover
+		staffPatchFloor = 25,
 	},
 })

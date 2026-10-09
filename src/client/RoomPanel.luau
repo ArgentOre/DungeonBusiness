@@ -13,14 +13,23 @@ local Ui = require(script.Parent:WaitForChild("Ui"))
 
 local Repair = Remotes:WaitForChild("Repair") :: RemoteEvent
 local BuyMob = Remotes:WaitForChild("BuyMob") :: RemoteEvent
-local Restock = Remotes:WaitForChild("Restock") :: RemoteEvent
+local SellSpoils = Remotes:WaitForChild("SellSpoils") :: RemoteEvent
+local StockSpoils = Remotes:WaitForChild("StockSpoils") :: RemoteEvent
+
+type Treasure = {
+	label: TextLabel,
+	bar: Frame,
+	spoils: TextLabel,
+	sell: TextButton,
+	stock: TextButton,
+}
 
 type Row = {
 	title: TextLabel,
 	bar: Frame,
 	status: TextLabel?, -- rooms repaired in the world
 	repair: TextButton?, -- rooms repaired from the panel
-	treasure: { label: TextLabel, bar: Frame, restock: TextButton }?, -- the room that holds the treasure
+	treasure: Treasure?, -- the room that holds the treasure and spoils
 	hires: { [Types.MobKind]: TextButton },
 }
 
@@ -65,19 +74,28 @@ local function onHireClicked(slot: number, kind: Types.MobKind)
 	end
 end
 
-local function onRestockClicked()
+local function onSellClicked()
 	local state = latest
-	local amount = if state then Rules.affordableRestock(state) else 0
-	if amount > 0 then
-		Restock:FireServer(amount)
+	if state and state.spoils > 0 then
+		SellSpoils:FireServer(state.spoils)
 	end
 end
 
-local function makeTreasure(frame: Frame): { label: TextLabel, bar: Frame, restock: TextButton }
+local function onStockClicked()
+	local state = latest
+	local amount = if state then Rules.stockable(state) else 0
+	if amount > 0 then
+		StockSpoils:FireServer(amount)
+	end
+end
+
+local function makeTreasure(frame: Frame): Treasure
 	return {
 		label = Ui.text(frame, "", Ui.STYLES.money),
 		bar = Ui.bar(frame, 1, Ui.THEME.bronze),
-		restock = Ui.secondaryButton(frame, "", onRestockClicked),
+		spoils = Ui.text(frame, "", Ui.STYLES.body),
+		stock = Ui.secondaryButton(frame, "", onStockClicked),
+		sell = Ui.secondaryButton(frame, "", onSellClicked),
 	}
 end
 
@@ -129,25 +147,32 @@ local function repairButtonText(segment: Types.Segment, points: number): string
 	return `Repair +{points} · {Rules.repairCost(segment, points)} bronze`
 end
 
-local function restockButtonText(state: Types.PlayerState, amount: number): string
+local function stockButtonText(state: Types.PlayerState, amount: number): string
 	if state.treasure >= Catalog.economy.treasureMax then
-		return "Treasure is full"
+		return "Treasure room is full"
 	end
-	if amount == 0 then
-		return "Restock (not enough bronze)"
-	end
-	return `Restock +{amount} · {Rules.restockCost(amount)} bronze`
+	return if amount > 0 then `Stock {amount} in the chest` else "Stock (no spoils yet)"
 end
 
-local function updateTreasure(treasure: { label: TextLabel, bar: Frame, restock: TextButton }, state: Types.PlayerState)
+local function sellButtonText(state: Types.PlayerState): string
+	if state.spoils <= 0 then
+		return "Sell (no spoils yet)"
+	end
+	return `Sell {state.spoils} · +{state.spoils * Catalog.economy.bronzePerSpoil} bronze`
+end
+
+local function updateTreasure(treasure: Treasure, state: Types.PlayerState)
 	local max = Catalog.economy.treasureMax
-	local empty = state.treasure <= 0
-	treasure.label.Text = if empty then "No treasure: no visitors!" else `Treasure {state.treasure}/{max}`
-	treasure.label.TextColor3 = if empty then Ui.THEME.needsFix else Ui.THEME.bronze
+	local junk = Rules.onlyJunk(state)
+	treasure.label.Text = if junk then "Only junk left: rookies only" else `Treasure {state.treasure}/{max}`
+	treasure.label.TextColor3 = if junk then Ui.THEME.needsFix else Ui.THEME.bronze
 	Ui.setBar(treasure.bar, state.treasure / max, Ui.THEME.bronze)
-	local amount = Rules.affordableRestock(state)
-	treasure.restock.Text = restockButtonText(state, amount)
-	Ui.setEnabled(treasure.restock, amount > 0)
+	treasure.spoils.Text = `Spoils: {state.spoils}`
+	local stockable = Rules.stockable(state)
+	treasure.stock.Text = stockButtonText(state, stockable)
+	Ui.setEnabled(treasure.stock, stockable > 0)
+	treasure.sell.Text = sellButtonText(state)
+	Ui.setEnabled(treasure.sell, state.spoils > 0)
 end
 
 local function updateRow(row: Row, state: Types.PlayerState, slot: number)
