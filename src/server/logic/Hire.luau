@@ -16,6 +16,7 @@ local function apply(state: Types.PlayerState, slot: number, kind: Types.MobKind
 		bronze = state.bronze - hireCost,
 		treasure = state.treasure,
 		spoils = state.spoils,
+		reputation = state.reputation,
 		dungeon = { segments = segments },
 	}
 end

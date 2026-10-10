@@ -21,6 +21,7 @@ local function sell(state: Types.PlayerState, amount: number): Types.PlayerState
 		bronze = state.bronze + amount * Catalog.economy.bronzePerSpoil,
 		treasure = state.treasure,
 		spoils = state.spoils - amount,
+		reputation = state.reputation,
 		dungeon = state.dungeon,
 	}
 end
@@ -31,6 +32,7 @@ local function stock(state: Types.PlayerState, amount: number): Types.PlayerStat
 		bronze = state.bronze,
 		treasure = state.treasure + amount,
 		spoils = state.spoils - amount,
+		reputation = state.reputation,
 		dungeon = state.dungeon,
 	}
 end

@@ -34,6 +34,7 @@ local nextPartyAt: number? = nil -- os.clock() time; an estimate, the server dec
 local bronzePanel = Ui.panel(screen, 200, 8)
 bronzePanel.Position = UDim2.fromOffset(EDGE, EDGE)
 local bronzeLabel = Ui.text(bronzePanel, "… bronze", Ui.STYLES.money)
+local reputationLabel = Ui.text(bronzePanel, "", Ui.STYLES.muted)
 
 -- Top right: the one main action, and when the next party is due
 local raidColumn = Ui.group(screen, 6)
@@ -101,6 +102,7 @@ feed.Size = UDim2.fromOffset(380, 0)
 local function render(state: Types.PlayerState)
 	currentState = state
 	bronzeLabel.Text = `{state.bronze} bronze`
+	reputationLabel.Text = `Reputation {state.reputation}/{Catalog.party.reputationMax}`
 	RoomPanel.render(roomRows, state)
 end
 
