@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Types = require(Shared:WaitForChild("Types"))
 local Catalog = require(Shared:WaitForChild("Catalog"))
+local Rules = require(Shared:WaitForChild("Rules"))
 local Ui = require(script.Parent:WaitForChild("Ui"))
 
 local CARD_WIDTH = 420
@@ -35,7 +36,7 @@ local function whereItEnded(report: Types.RaidReport, state: Types.PlayerState):
 		return `They gave up in the {roomName(state, report.endSlot)}.`
 	end
 	if report.reputation > 0 then
-		return "They kept their gear, so nothing dropped. Word spreads that your dungeon can be beaten: reputation back to 0."
+		return `They kept their gear, so nothing dropped. Word spreads that your dungeon can be beaten: it's {Rules.reputationTitle(0)} again.`
 	end
 	return "They kept their gear, so nothing dropped."
 end

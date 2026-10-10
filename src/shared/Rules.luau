@@ -64,6 +64,11 @@ local function lure(state: Types.PlayerState): number
 	return math.clamp(state.treasure / Catalog.economy.treasureMax, 0, 1)
 end
 
+-- Lua lists start at 1, so reputation 0 is the first title
+local function reputationTitle(reputation: number): string
+	return Catalog.party.reputationTitles[reputation + 1]
+end
+
 local function isWholeAmount(amount: number): boolean
 	return amount > 0 and amount == math.floor(amount)
 end
@@ -97,6 +102,7 @@ end
 
 return {
 	chestEmpty = chestEmpty,
+	reputationTitle = reputationTitle,
 	lure = lure,
 	canSell = canSell,
 	stockable = stockable,
