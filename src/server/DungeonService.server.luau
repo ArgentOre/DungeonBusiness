@@ -89,13 +89,6 @@ local function tryRepair(player: Player, slot: number, points: number)
 	setState(player, Repair.apply(state, slot, points))
 end
 
-local function onRepair(player: Player, slot: unknown, points: unknown)
-	if typeof(slot) ~= "number" or typeof(points) ~= "number" then
-		return
-	end
-	tryRepair(player, slot, points)
-end
-
 local function onPromptTriggered(prompt: ProximityPrompt, player: Player)
 	local slot: unknown = prompt:GetAttribute("RepairSlot")
 	local state = states[player]
@@ -150,7 +143,6 @@ end
 
 Remotes.GetState.OnServerInvoke = onGetState
 Remotes.SetDoorsOpen.OnServerEvent:Connect(onSetDoorsOpen)
-Remotes.Repair.OnServerEvent:Connect(onRepair)
 Remotes.BuyMob.OnServerEvent:Connect(onBuyMob)
 Remotes.SellSpoils.OnServerEvent:Connect(onSellSpoils)
 Remotes.StockSpoils.OnServerEvent:Connect(onStockSpoils)
