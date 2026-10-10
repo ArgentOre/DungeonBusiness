@@ -32,14 +32,28 @@ local function partyStrength(lure: number): number
 	return rookie + (1 - rookie) * lure
 end
 
+-- Word spreads: every raid held in a row draws a slightly stronger party
+local function fame(reputation: number): number
+	return 1 + Catalog.party.reputationStep * reputation
+end
+
+-- An escape proves the dungeon can be beaten, so its reputation starts over
+local function reputationAfter(reputation: number, won: boolean): number
+	if won then
+		return math.min(Catalog.party.reputationMax, reputation + 1)
+	end
+	return 0
+end
+
 local function play(state: Types.PlayerState, rng: Random): (Types.PlayerState, Types.RaidResult)
 	local lure = Rules.lure(state)
-	local party = PartyGen.make(rng, partyStrength(lure))
+	local party = PartyGen.make(rng, partyStrength(lure) * fame(state.reputation))
 	local result = RaidSim.simulate(state.dungeon, party)
 	return {
 		bronze = Wages.pay(state.bronze, result.after),
 		treasure = treasureAfter(state.treasure, result.won),
 		spoils = state.spoils + Spoils.dropped(result, lure),
+		reputation = reputationAfter(state.reputation, result.won),
 		dungeon = staffPatch(result.after),
 	}, result
 end

@@ -21,13 +21,14 @@ export type PlayerState = {
 	bronze: number,
 	treasure: number, -- value stocked in the treasure room: the lure. With none, only rookies come
 	spoils: number, -- value of what defeated adventurers left behind, waiting to be sold or stocked
+	reputation: number, -- raids held in a row (capped). Word spreads, and stronger parties come
 	dungeon: Dungeon,
 }
 
 export type Party = {
 	hp: number,
 	power: number,
-	strength: number, -- 1 for a full party; rookies are weaker and clumsier, so they wear rooms less
+	strength: number, -- 1 for a full party; rookies are weaker and clumsier, so they wear rooms less; a famous dungeon draws stronger
 }
 
 export type RaidEventKind =
@@ -59,6 +60,7 @@ export type RaidReport = {
 	wagesPaid: number,
 	endSlot: number, -- room where the party was defeated, or the last room if it escaped
 	treasureTaken: number,
+	reputation: number, -- how famous the dungeon was when this party came
 }
 
 export type RoomStats = {

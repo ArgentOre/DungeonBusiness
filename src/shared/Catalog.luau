@@ -37,7 +37,7 @@ return deepFreeze({
 	party = {
 		-- Every party starts from the same base, so hiring makes the dungeon stronger
 		-- instead of drawing stronger parties. Treasure (strength) and a little luck move it.
-		basePower = 48, -- tuned 2026-10-10: 49+ makes a full chest a trap even for attentive players
+		basePower = 39, -- tuned with reputation 2026-10-10: a new dungeon starts comfortable; fame brings the threat
 		luckMin = 0.9,
 		luckMax = 1.1,
 		hpPerPower = 1,
@@ -46,6 +46,10 @@ return deepFreeze({
 		-- a full treasure room draws full-strength parties. Living on rookies is a
 		-- way back, never a strategy.
 		rookieStrength = 0.3,
+		-- Each raid the dungeon holds in a row draws a slightly stronger party, up to a cap.
+		-- An escape resets it. Without it, a hired and tended dungeon never loses (2026-10-10).
+		reputationStep = 0.05,
+		reputationMax = 10,
 		rookieGearValue = 0.5,
 	},
 	economy = {

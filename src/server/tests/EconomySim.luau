@@ -138,7 +138,7 @@ local function brokeStart(): Types.PlayerState
 	for _, segment in fresh.dungeon.segments do
 		table.insert(segments, { kind = segment.kind, condition = 30, mobs = segment.mobs })
 	end
-	return { bronze = 0, treasure = 0, spoils = 0, dungeon = { segments = segments } }
+	return { bronze = 0, treasure = 0, spoils = 0, reputation = 0, dungeon = { segments = segments } }
 end
 
 local function runRecovery(raids: number?, seed: number?)

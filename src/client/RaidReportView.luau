@@ -34,7 +34,10 @@ local function whereItEnded(report: Types.RaidReport, state: Types.PlayerState):
 	if report.won then
 		return `They gave up in the {roomName(state, report.endSlot)}.`
 	end
-	return "They kept their gear, so nothing dropped. Stock spoils to refill the treasure."
+	if report.reputation > 0 then
+		return "They kept their gear, so nothing dropped. Word spreads that your dungeon can be beaten: reputation back to 0."
+	end
+	return "They kept their gear, so nothing dropped."
 end
 
 local function signed(amount: number): string
