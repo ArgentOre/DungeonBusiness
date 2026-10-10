@@ -35,11 +35,13 @@ return deepFreeze({
 	mobs = mobs,
 	starterLayout = starterLayout,
 	party = {
-		powerSpreadMin = 0.6,
-		powerSpreadMax = 1.4,
+		-- Every party starts from the same base, so hiring makes the dungeon stronger
+		-- instead of drawing stronger parties. Treasure (strength) and a little luck move it.
+		basePower = 48, -- tuned 2026-10-10: 49+ makes a full chest a trap even for attentive players
+		luckMin = 0.9,
+		luckMax = 1.1,
 		hpPerPower = 1,
 		lootPerPower = 1.75, -- tuned with EconomySim.runAll (2026-10-09)
-		mobHpWeight = 0.1,
 		-- The treasure is a dial: to an empty chest, rookies come (weaker, cheap gear);
 		-- a full treasure room draws full-strength parties. Living on rookies is a
 		-- way back, never a strategy.

@@ -34,7 +34,7 @@ end
 
 local function play(state: Types.PlayerState, rng: Random): (Types.PlayerState, Types.RaidResult)
 	local lure = Rules.lure(state)
-	local party = PartyGen.make(state.dungeon, rng, partyStrength(lure))
+	local party = PartyGen.make(rng, partyStrength(lure))
 	local result = RaidSim.simulate(state.dungeon, party)
 	return {
 		bronze = Wages.pay(state.bronze, result.after),
