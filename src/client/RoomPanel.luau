@@ -11,7 +11,6 @@ local Rules = require(Shared:WaitForChild("Rules"))
 local Catalog = require(Shared:WaitForChild("Catalog"))
 local Ui = require(script.Parent:WaitForChild("Ui"))
 
-local Repair = Remotes:WaitForChild("Repair") :: RemoteEvent
 local BuyMob = Remotes:WaitForChild("BuyMob") :: RemoteEvent
 local SellSpoils = Remotes:WaitForChild("SellSpoils") :: RemoteEvent
 local StockSpoils = Remotes:WaitForChild("StockSpoils") :: RemoteEvent
@@ -27,8 +26,7 @@ type Treasure = {
 type Row = {
 	title: TextLabel,
 	bar: Frame,
-	status: TextLabel?, -- rooms repaired in the world
-	repair: TextButton?, -- rooms repaired from the panel
+	status: TextLabel, -- rooms are fixed in the world; the panel only says how they're doing
 	treasure: Treasure?, -- the room that holds the treasure and spoils
 	hires: { [Types.MobKind]: TextButton },
 }
@@ -57,14 +55,6 @@ local function layoutOf(state: Types.PlayerState): string
 		table.insert(kinds, segment.kind)
 	end
 	return table.concat(kinds, ",")
-end
-
-local function onRepairClicked(slot: number)
-	local state = latest
-	local points = if state then Rules.affordableRepair(state, slot) else 0
-	if points > 0 then
-		Repair:FireServer(slot, points)
-	end
 end
 
 local function onHireClicked(slot: number, kind: Types.MobKind)
@@ -105,18 +95,10 @@ local function makeRow(container: Frame, slot: number, kind: Types.RoomKind): Ro
 	local row: Row = {
 		title = Ui.text(frame, "", Ui.STYLES.label),
 		bar = Ui.bar(frame, 1, Ui.THEME.mutedText),
-		status = nil,
-		repair = nil,
+		status = Ui.text(frame, "", Ui.STYLES.muted),
 		treasure = nil,
 		hires = {},
 	}
-	if stats.repairInWorld then
-		row.status = Ui.text(frame, "", Ui.STYLES.muted)
-	else
-		row.repair = Ui.secondaryButton(frame, "", function()
-			onRepairClicked(slot)
-		end)
-	end
 	if stats.holdsTreasure then
 		row.treasure = makeTreasure(frame)
 	end
@@ -137,14 +119,8 @@ local function roomTitle(segment: Types.Segment, slot: number): string
 	return `{slot} · {stats.displayName}{staff}`
 end
 
-local function repairButtonText(segment: Types.Segment, points: number): string
-	if segment.condition >= 100 then
-		return "Spotless"
-	end
-	if points == 0 then
-		return "Repair (not enough bronze)"
-	end
-	return `Repair +{points} · {Rules.repairCost(segment, points)} bronze`
+local function statusText(segment: Types.Segment): string
+	return if segment.condition >= 100 then "Spotless" else `{segment.condition}% · fix it in the room`
 end
 
 local function stockButtonText(state: Types.PlayerState, amount: number): string
@@ -180,14 +156,7 @@ local function updateRow(row: Row, state: Types.PlayerState, slot: number)
 	row.title.Text = roomTitle(segment, slot)
 	local worn = segment.condition < 100
 	Ui.setBar(row.bar, segment.condition / 100, if worn then Ui.THEME.needsFix else Ui.THEME.mutedText)
-	if row.status then
-		row.status.Text = `{segment.condition}% · fix it in the room`
-	end
-	if row.repair then
-		local points = Rules.affordableRepair(state, slot)
-		row.repair.Text = repairButtonText(segment, points)
-		Ui.setEnabled(row.repair, points > 0)
-	end
+	row.status.Text = statusText(segment)
 	if row.treasure then
 		updateTreasure(row.treasure, state)
 	end

@@ -13,8 +13,8 @@ local ROOM_SIZE = 72
 local ROOM_SPACING = 82 -- matches how Jordan laid the templates out side by side
 local HALLWAY_WIDTH = 20
 local ENTRANCE_LENGTH = 12 -- hallway before the first doorway, where the player arrives
-local REARM_HOLD_SECONDS = 1.5
-local REARM_PROMPT_DISTANCE = 10
+local FIX_HOLD_SECONDS = 1.5
+local FIX_PROMPT_DISTANCE = 10
 
 local function findFloor(room: Model): BasePart
 	local structure = room:FindFirstChild("Structure")
@@ -69,28 +69,62 @@ local function removeUnusedTrapState(trap: Instance, sprung: boolean)
 	end
 end
 
-local function addRearmPrompt(trap: Instance, slot: number)
-	local prompt = Instance.new("ProximityPrompt")
-	prompt.Name = "RearmPrompt"
-	prompt.ActionText = "Re-arm"
-	prompt.ObjectText = "Trap"
-	prompt.HoldDuration = REARM_HOLD_SECONDS
-	prompt.MaxActivationDistance = REARM_PROMPT_DISTANCE
-	prompt.RequiresLineOfSight = false -- RepairSpot sits inside the trap's own parts
-	prompt:SetAttribute("RepairSlot", slot)
-	prompt.Parent = trap:FindFirstChild("RepairSpot")
+-- A room that springs a trap needs trap art; any other room has no trap to set up
+local function setUpTrap(gameplay: Model, roomLabel: string, segment: Types.Segment): Instance?
+	if Catalog.rooms[segment.kind].trapDamage <= 0 then
+		return nil
+	end
+	local trap = findUsableTrap(gameplay, roomLabel)
+	if trap then
+		removeUnusedTrapState(trap, isWorn(segment))
+	end
+	return trap
 end
 
-local function setUpTrap(gameplay: Model, roomLabel: string, segment: Types.Segment, slot: number)
-	local trap = findUsableTrap(gameplay, roomLabel)
-	if not trap then
+-- A RepairSpot part is art. Until Jordan adds one, an invisible spot at the middle of
+-- the floor does the job, so every room can be fixed before its art lands
+local function placeholderSpot(gameplay: Model, floor: BasePart, roomLabel: string): BasePart
+	warn(`{roomLabel}: needs a Gameplay.RepairSpot part; using the middle of the floor`)
+	local spot = Instance.new("Part")
+	spot.Name = "RepairSpot"
+	spot.Anchored = true
+	spot.CanCollide = false
+	spot.Transparency = 1
+	spot.Size = Vector3.new(2, 2, 2)
+	spot.CFrame = floor.CFrame * CFrame.new(0, floor.Size.Y / 2 + 3, 0)
+	spot.Parent = gameplay
+	return spot
+end
+
+local function findRepairSpot(gameplay: Model, floor: BasePart, roomLabel: string): BasePart
+	local spot = gameplay:FindFirstChild("RepairSpot")
+	if spot and spot:IsA("BasePart") then
+		return spot
+	end
+	return placeholderSpot(gameplay, floor, roomLabel)
+end
+
+local function addFixPrompt(spot: BasePart, slot: number, action: string, object: string)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "FixPrompt"
+	prompt.ActionText = action
+	prompt.ObjectText = object
+	prompt.HoldDuration = FIX_HOLD_SECONDS
+	prompt.MaxActivationDistance = FIX_PROMPT_DISTANCE
+	prompt.RequiresLineOfSight = false -- a RepairSpot can sit inside other parts, like the trap's
+	prompt:SetAttribute("RepairSlot", slot)
+	prompt.Parent = spot
+end
+
+-- A sprung trap is re-armed at the trap; every other worn room is tidied at its RepairSpot
+local function addFixPromptFor(gameplay: Model, floor: BasePart, roomLabel: string, segment: Types.Segment, slot: number, trap: Instance?)
+	local trapSpot = trap and trap:FindFirstChild("RepairSpot")
+	if trapSpot and trapSpot:IsA("BasePart") then
+		addFixPrompt(trapSpot, slot, "Re-arm", "Trap")
 		return
 	end
-	local sprung = isWorn(segment)
-	removeUnusedTrapState(trap, sprung)
-	if sprung then
-		addRearmPrompt(trap, slot)
-	end
+	local name = Catalog.rooms[segment.kind].displayName
+	addFixPrompt(findRepairSpot(gameplay, floor, roomLabel), slot, "Tidy up", name)
 end
 
 -- Mess is optional art: a room without it simply looks tidy, so no warning
@@ -101,12 +135,13 @@ local function removeMessIfTidy(gameplay: Model, segment: Types.Segment)
 	end
 end
 
--- Makes a room's Gameplay parts match its segment: trap state, re-arm prompt, mess
-local function dressGameplay(gameplay: Model, roomLabel: string, segment: Types.Segment, slot: number)
-	if Catalog.rooms[segment.kind].repairInWorld then
-		setUpTrap(gameplay, roomLabel, segment, slot)
-	end
+-- Makes a room's Gameplay parts match its segment: trap state, mess, and a fix prompt when worn
+local function dressGameplay(gameplay: Model, floor: BasePart, roomLabel: string, segment: Types.Segment, slot: number)
+	local trap = setUpTrap(gameplay, roomLabel, segment)
 	removeMessIfTidy(gameplay, segment)
+	if isWorn(segment) then
+		addFixPromptFor(gameplay, floor, roomLabel, segment, slot, trap)
+	end
 end
 
 -- A fresh copy of the template's Gameplay, placed where it belongs in `room`
@@ -122,7 +157,7 @@ end
 -- Swaps only the room's Gameplay; floor and walls stay, so nothing flashes and nobody falls
 local function refreshRoom(room: Model, segment: Types.Segment, slot: number)
 	local gameplay = freshGameplay(room, segment.kind)
-	dressGameplay(gameplay, room.Name, segment, slot)
+	dressGameplay(gameplay, findFloor(room), room.Name, segment, slot)
 	local old = findGameplay(room)
 	gameplay.Parent = room
 	old:Destroy()
@@ -150,7 +185,7 @@ local function build(dungeon: Types.Dungeon, origin: CFrame): Model
 	for slot, segment in dungeon.segments do
 		local room = cloneRoom(segment.kind)
 		room.Name = roomName(slot, segment.kind)
-		dressGameplay(findGameplay(room), room.Name, segment, slot)
+		dressGameplay(findGameplay(room), findFloor(room), room.Name, segment, slot)
 		room:PivotTo(origin * CFrame.new(roomCenterX(slot), -0.5, roomCenterZ))
 		room.Parent = model
 	end

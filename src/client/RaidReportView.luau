@@ -52,10 +52,6 @@ local function addPayday(parent: Frame, report: Types.RaidReport)
 	Ui.text(box, `Wages  −{report.wagesPaid} bronze`, Ui.STYLES.muted)
 end
 
-local function fixHint(segment: Types.Segment): string
-	return if Catalog.rooms[segment.kind].repairInWorld then " · fix it in the room" else ""
-end
-
 local function addNeedsFixing(parent: Frame, state: Types.PlayerState)
 	local box = Ui.group(parent, 4)
 	Ui.text(box, "Needs fixing", Ui.STYLES.label)
@@ -64,7 +60,7 @@ local function addNeedsFixing(parent: Frame, state: Types.PlayerState)
 		if segment.condition < 100 then
 			anything = true
 			local name = Catalog.rooms[segment.kind].displayName
-			Ui.text(box, `{name} · {segment.condition}%{fixHint(segment)}`, Ui.STYLES.warning)
+			Ui.text(box, `{name} · {segment.condition}% · fix it in the room`, Ui.STYLES.warning)
 		end
 	end
 	if not anything then
