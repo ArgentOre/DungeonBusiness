@@ -8,11 +8,11 @@ local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Types = require(Shared:WaitForChild("Types"))
 local Catalog = require(Shared:WaitForChild("Catalog"))
 local Rules = require(Shared:WaitForChild("Rules"))
-local EventText = require(Shared:WaitForChild("EventText"))
 local Ui = require(script.Parent:WaitForChild("Ui"))
 local RaidReportView = require(script.Parent:WaitForChild("RaidReportView"))
 local RoomPanel = require(script.Parent:WaitForChild("RoomPanel"))
 local RaidFeed = require(script.Parent:WaitForChild("RaidFeed"))
+local RaidLog = require(script.Parent:WaitForChild("RaidLog"))
 
 local GetState = Remotes:WaitForChild("GetState") :: RemoteFunction
 local SetDoorsOpen = Remotes:WaitForChild("SetDoorsOpen") :: RemoteEvent
@@ -20,6 +20,7 @@ local StateChanged = Remotes:WaitForChild("StateChanged") :: RemoteEvent
 local RaidFinished = Remotes:WaitForChild("RaidFinished") :: RemoteEvent
 
 local EDGE = 16 -- gap between the HUD and the screen edge
+local TELLING_SHARE = 0.75 -- a raid is told over most of the gap before the next party, leaving a breath
 
 local screen = Instance.new("ScreenGui")
 screen.ResetOnSpawn = false
@@ -57,11 +58,10 @@ dungeonPanel.Position = UDim2.new(0, EDGE, 1, -EDGE)
 Ui.text(dungeonPanel, "Your dungeon", Ui.STYLES.label)
 local roomRows = Ui.group(dungeonPanel, 14)
 
--- Bottom right: the raid log, opened from a raid report
+-- Bottom right: the raid log, open from the start so there's always something happening
 local logPanel = Ui.panel(screen, 360, 6)
 logPanel.AnchorPoint = Vector2.new(1, 1)
 logPanel.Position = UDim2.new(1, -EDGE, 1, -EDGE)
-logPanel.Visible = false
 Ui.text(logPanel, "Raid log", Ui.STYLES.label)
 local logLines = Ui.group(logPanel, 2)
 Ui.secondaryButton(logPanel, "Close", function()
@@ -72,23 +72,16 @@ local panelToggle: TextButton
 panelToggle = Ui.secondaryButton(bronzePanel, "Hide panels", function()
 	local visible = not dungeonPanel.Visible
 	dungeonPanel.Visible = visible
-	logPanel.Visible = visible and logPanel.Visible
+	logPanel.Visible = visible
 	panelToggle.Text = if visible then "Hide panels" else "Show panels"
 end)
-
-local function fillLog(events: { Types.RaidEvent })
-	Ui.clear(logLines)
-	for _, event in events do
-		Ui.text(logLines, EventText.format(event), Ui.STYLES.muted)
-	end
-end
 
 local function openRaid(entry: RaidFeed.Entry)
 	if not currentState then
 		return
 	end
 	RaidReportView.show(screen, entry.report, currentState, function()
-		fillLog(entry.events)
+		RaidLog.show(logLines, entry.events)
 		logPanel.Visible = true
 	end)
 end
@@ -117,9 +110,13 @@ local function doorsStatusText(): string
 	return if secondsLeft > 0 then `Next party in {secondsLeft}s` else "A party is on the way…"
 end
 
+-- The feed shows how the raid ended only once the log has told it, so the result isn't spoiled
 local function onRaidFinished(events: { Types.RaidEvent }, report: Types.RaidReport)
-	nextPartyAt = os.clock() + Catalog.economy.raidIntervalSeconds
-	RaidFeed.add(report, events)
+	local interval = Catalog.economy.raidIntervalSeconds
+	nextPartyAt = os.clock() + interval
+	RaidLog.narrate(logLines, events, interval * TELLING_SHARE, function()
+		RaidFeed.add(report, events)
+	end)
 end
 
 StateChanged.OnClientEvent:Connect(render)
