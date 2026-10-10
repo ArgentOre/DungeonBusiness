@@ -102,7 +102,7 @@ feed.Size = UDim2.fromOffset(380, 0)
 local function render(state: Types.PlayerState)
 	currentState = state
 	bronzeLabel.Text = `{state.bronze} bronze`
-	reputationLabel.Text = `Reputation {state.reputation}/{Catalog.party.reputationMax}`
+	reputationLabel.Text = `Reputation: {Rules.reputationTitle(state.reputation)}`
 	RoomPanel.render(roomRows, state)
 end
 
