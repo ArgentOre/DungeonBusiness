@@ -208,13 +208,16 @@ end
 -- Brings an existing dungeon Model from `old` to `new` by refreshing only rooms whose look
 -- changed. Returns false when rooms were added, removed or reordered, or when a room is
 -- missing from the Model: either way the world doesn't match, so the caller rebuilds.
+-- A missing room is a bug the rebuild would hide, so that case also warns.
 local function update(model: Model, old: Types.Dungeon, new: Types.Dungeon): boolean
 	if not sameLayout(old, new) then
 		return false
 	end
 	for slot, segment in new.segments do
-		local room = model:FindFirstChild(roomName(slot, segment.kind))
+		local name = roomName(slot, segment.kind)
+		local room = model:FindFirstChild(name)
 		if not (room and room:IsA("Model")) then
+			warn(`{name}: missing from the dungeon Model; rebuilding the whole dungeon`)
 			return false
 		end
 		if isWorn(old.segments[slot]) ~= isWorn(segment) then
