@@ -41,23 +41,19 @@ local function whereItEnded(report: Types.RaidReport, state: Types.PlayerState):
 	return "They kept their gear, so nothing dropped."
 end
 
-local function fameBonusPercent(reputation: number): number
-	return math.round(Catalog.party.reputationStep * reputation * 100)
-end
-
--- Why the raid went the way it did, or nil when nothing stood out.
--- Kept short: feed lines don't wrap
+-- Why the raid went the way it did, in plain words, or nil when nothing stood out.
+-- A win against a famous party needs no reason: fame only explains why they got away
 local function reason(report: Types.RaidReport): string?
 	if report.fixingWouldHaveHeld then
-		return "worn rooms"
+		return "worn rooms let them through"
 	end
 	if report.rookies then
-		return "empty chest"
+		return "an empty chest only draws rookies"
 	end
-	if report.reputation > 0 then
-		return `famous +{fameBonusPercent(report.reputation)}%`
+	if report.won then
+		return nil
 	end
-	return if report.won then nil else "strong party"
+	return if report.reputation > 0 then "your fame drew a tougher party" else "a party too tough to stop"
 end
 
 local function signed(amount: number): string
