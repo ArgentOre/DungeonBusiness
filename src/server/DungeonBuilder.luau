@@ -1,7 +1,7 @@
 --!strict
 -- Turns a Dungeon into a Model in the world. The origin is the hallway entrance:
--- the hallway runs along +X from it, and rooms sit on its +Z side in raid order,
--- each room's doorway (north wall) facing the hallway.
+-- the hallway runs along +X from it, and rooms sit side by side on its +Z side in raid
+-- order, each room's doorway (north wall) facing the hallway.
 local ServerStorage = game:GetService("ServerStorage")
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Types = require(Shared.Types)
@@ -9,8 +9,7 @@ local Catalog = require(Shared.Catalog)
 
 local RoomTemplates = ServerStorage.RoomTemplates
 
-local ROOM_SIZE = 72
-local ROOM_SPACING = 82 -- matches how Jordan laid the templates out side by side
+local ROOM_SIZE = 72 -- rooms touch, so a side doorway opens straight into the next room
 local HALLWAY_WIDTH = 20
 local ENTRANCE_LENGTH = 12 -- hallway before the first doorway, where the player arrives
 local FIX_HOLD_SECONDS = 1.5
@@ -164,7 +163,7 @@ local function refreshRoom(room: Model, segment: Types.Segment, slot: number)
 end
 
 local function roomCenterX(slot: number): number
-	return ENTRANCE_LENGTH + ROOM_SIZE / 2 + (slot - 1) * ROOM_SPACING
+	return ENTRANCE_LENGTH + ROOM_SIZE / 2 + (slot - 1) * ROOM_SIZE
 end
 
 -- Placeholder until Jordan builds a hallway piece
