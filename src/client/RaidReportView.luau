@@ -41,6 +41,25 @@ local function whereItEnded(report: Types.RaidReport, state: Types.PlayerState):
 	return "They kept their gear, so nothing dropped."
 end
 
+local function fameBonusPercent(reputation: number): number
+	return math.round(Catalog.party.reputationStep * reputation * 100)
+end
+
+-- Why the raid went the way it did, or nil when nothing stood out.
+-- Kept short: feed lines don't wrap
+local function reason(report: Types.RaidReport): string?
+	if report.fixingWouldHaveHeld then
+		return "worn rooms"
+	end
+	if report.rookies then
+		return "empty chest"
+	end
+	if report.reputation > 0 then
+		return `famous +{fameBonusPercent(report.reputation)}%`
+	end
+	return if report.won then nil else "strong party"
+end
+
 local function signed(amount: number): string
 	return if amount >= 0 then `+{amount}` else `−{-amount}`
 end
@@ -70,10 +89,15 @@ end
 
 -- One line for the notice after each raid; tapping the notice opens the full card
 local function summary(report: Types.RaidReport): string
-	if report.spoilsDropped > 0 then
-		return `{headline(report)}  +{report.spoilsDropped} spoils`
+	local line = headline(report)
+	local why = reason(report)
+	if why then
+		line ..= ` · {why}`
 	end
-	return headline(report)
+	if report.spoilsDropped > 0 then
+		line ..= `  +{report.spoilsDropped} spoils`
+	end
+	return line
 end
 
 local function show(screen: ScreenGui, report: Types.RaidReport, state: Types.PlayerState, onShowLog: () -> ())
@@ -82,6 +106,10 @@ local function show(screen: ScreenGui, report: Types.RaidReport, state: Types.Pl
 	frame.AnchorPoint = Vector2.new(0.5, 0.5)
 	frame.Position = UDim2.fromScale(0.5, 0.5)
 	Ui.text(frame, headline(report), Ui.STYLES.heading)
+	local why = reason(report)
+	if why then
+		Ui.text(frame, `Why: {why}`, Ui.STYLES.label)
+	end
 	Ui.text(frame, whereItEnded(report, state), Ui.STYLES.muted)
 	addPayday(frame, report)
 	addNeedsFixing(frame, state)

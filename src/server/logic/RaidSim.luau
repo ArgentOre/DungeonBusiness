@@ -84,6 +84,7 @@ local function simulate(dungeon: Types.Dungeon, party: Types.Party): Types.RaidR
 		events = events,
 		after = { segments = after },
 		loot = math.round(party.power * Catalog.party.lootPerPower),
+		party = party,
 	}
 end
 
