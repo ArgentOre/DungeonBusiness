@@ -51,6 +51,7 @@ export type RaidResult = {
 	events: { RaidEvent },
 	after: Dungeon,
 	loot: number,
+	party: Party, -- who came, so the raid can be replayed against other rooms
 }
 
 export type RaidReport = {
@@ -61,6 +62,7 @@ export type RaidReport = {
 	endSlot: number, -- room where the party was defeated, or the last room if it escaped
 	treasureTaken: number,
 	reputation: number, -- how famous the dungeon was when this party came
+	fixingWouldHaveHeld: boolean, -- the party escaped, but fully fixed rooms would have stopped it
 }
 
 export type RoomStats = {
