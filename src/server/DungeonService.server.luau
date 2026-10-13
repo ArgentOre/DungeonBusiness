@@ -48,8 +48,8 @@ end
 
 -- The interval is enforced here, not by the loop, so toggling the doors can't speed up raids
 local function partyIsDue(player: Player): boolean
-	local last = lastRaidAt[player]
-	return last == nil or os.clock() - last >= Catalog.economy.raidIntervalSeconds
+	local now = os.clock()
+	return Rules.nextPartyAt(lastRaidAt[player], now) <= now
 end
 
 local function runRaid(player: Player)

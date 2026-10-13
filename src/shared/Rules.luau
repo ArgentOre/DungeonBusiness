@@ -64,6 +64,15 @@ local function lure(state: Types.PlayerState): number
 	return math.clamp(state.treasure / Catalog.economy.treasureMax, 0, 1)
 end
 
+-- When the next party may come in, given when the last one did (nil: none yet).
+-- The server enforces it; the client counts down to it, so both read the same rule
+local function nextPartyAt(lastPartyAt: number?, now: number): number
+	if lastPartyAt == nil then
+		return now
+	end
+	return math.max(now, lastPartyAt + Catalog.economy.raidIntervalSeconds)
+end
+
 -- Lua lists start at 1, so reputation 0 is the first title
 local function reputationTitle(reputation: number): string
 	return Catalog.party.reputationTitles[reputation + 1]
@@ -102,6 +111,7 @@ end
 
 return {
 	chestEmpty = chestEmpty,
+	nextPartyAt = nextPartyAt,
 	reputationTitle = reputationTitle,
 	lure = lure,
 	canSell = canSell,
