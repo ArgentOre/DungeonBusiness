@@ -120,5 +120,4 @@ end
 return {
 	summary = summary,
 	show = show,
-	hide = hide,
 }

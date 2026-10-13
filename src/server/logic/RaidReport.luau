@@ -5,6 +5,7 @@ local Shared = game:GetService("ReplicatedStorage").Shared
 local Types = require(Shared.Types)
 local Rules = require(Shared.Rules)
 local RaidSim = require(script.Parent.RaidSim)
+local Condition = require(script.Parent.Condition)
 
 -- A raid's last event is always PartyDefeated or PartyEscaped, and both carry the room
 local function endSlot(events: { Types.RaidEvent }): number
@@ -12,18 +13,10 @@ local function endSlot(events: { Types.RaidEvent }): number
 	return if last then last.slot else 0
 end
 
-local function fullyFixed(dungeon: Types.Dungeon): Types.Dungeon
-	local segments: { Types.Segment } = {}
-	for _, segment in dungeon.segments do
-		table.insert(segments, { kind = segment.kind, condition = 100, mobs = segment.mobs })
-	end
-	return { segments = segments }
-end
-
 -- Replays the same party against the same rooms, fully fixed. Raids are deterministic,
 -- so this is the exact answer to "was it the wear?", not a guess
 local function fixingWouldHaveHeld(dungeon: Types.Dungeon, result: Types.RaidResult): boolean
-	return not result.won and RaidSim.simulate(fullyFixed(dungeon), result.party).won
+	return not result.won and RaidSim.simulate(Condition.atLeast(dungeon, 100), result.party).won
 end
 
 local function make(before: Types.PlayerState, after: Types.PlayerState, result: Types.RaidResult): Types.RaidReport

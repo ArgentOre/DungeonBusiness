@@ -9,7 +9,6 @@ local function make(rng: Random, strength: number): Types.Party
 	local power = math.max(1, math.round(Catalog.party.basePower * luck * strength))
 	return {
 		power = power,
-		hp = power * Catalog.party.hpPerPower,
 		strength = strength,
 	}
 end
