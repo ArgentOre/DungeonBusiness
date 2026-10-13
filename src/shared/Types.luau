@@ -26,8 +26,7 @@ export type PlayerState = {
 }
 
 export type Party = {
-	hp: number,
-	power: number,
+	power: number, -- also the party's starting HP
 	strength: number, -- 1 for a full party; rookies are weaker and clumsier, so they wear rooms less; a famous dungeon draws stronger
 }
 

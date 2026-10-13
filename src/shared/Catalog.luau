@@ -40,7 +40,6 @@ return deepFreeze({
 		basePower = 39, -- tuned with reputation 2026-10-10: a new dungeon starts comfortable; fame brings the threat
 		luckMin = 0.9,
 		luckMax = 1.1,
-		hpPerPower = 1,
 		lootPerPower = 1.75, -- tuned with EconomySim.runAll (2026-10-09)
 		-- The treasure is a dial: to an empty chest, rookies come (weaker, cheap gear);
 		-- a full treasure room draws full-strength parties. Living on rookies is a

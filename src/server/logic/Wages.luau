@@ -18,6 +18,5 @@ local function pay(bronze: number, dungeon: Types.Dungeon): number
 end
 
 return {
-	due = due,
 	pay = pay,
 }

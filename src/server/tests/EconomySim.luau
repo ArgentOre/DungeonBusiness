@@ -13,6 +13,7 @@ local PlayRaid = require(Logic.PlayRaid)
 local Repair = require(Logic.Repair)
 local Hire = require(Logic.Hire)
 local Spoils = require(Logic.Spoils)
+local Condition = require(Logic.Condition)
 
 export type Policy = "steady" | "busy" | "neglect" | "recover"
 
@@ -136,7 +137,7 @@ local function brokeStart(): Types.PlayerState
 	local fresh = StartingState.create()
 	local segments: { Types.Segment } = {}
 	for _, segment in fresh.dungeon.segments do
-		table.insert(segments, { kind = segment.kind, condition = 30, mobs = segment.mobs })
+		table.insert(segments, Condition.withCondition(segment, 30))
 	end
 	return { bronze = 0, treasure = 0, spoils = 0, reputation = 0, dungeon = { segments = segments } }
 end
