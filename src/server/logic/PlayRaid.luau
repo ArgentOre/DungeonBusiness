@@ -41,9 +41,14 @@ local function reputationAfter(reputation: number, won: boolean): number
 	return 0
 end
 
+-- How strong the next party is, before luck: what the treasure draws, times the dungeon's fame
+local function nextPartyStrength(state: Types.PlayerState): number
+	return partyStrength(Rules.lure(state)) * fame(state.reputation)
+end
+
 local function play(state: Types.PlayerState, rng: Random): (Types.PlayerState, Types.RaidResult)
 	local lure = Rules.lure(state)
-	local party = PartyGen.make(rng, partyStrength(lure) * fame(state.reputation))
+	local party = PartyGen.make(rng, nextPartyStrength(state))
 	local result = RaidSim.simulate(state.dungeon, party)
 	return {
 		bronze = Wages.pay(state.bronze, result.after),
@@ -56,4 +61,5 @@ end
 
 return {
 	play = play,
+	nextPartyStrength = nextPartyStrength,
 }
