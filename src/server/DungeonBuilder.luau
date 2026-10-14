@@ -1,16 +1,16 @@
 --!strict
 -- Turns a Dungeon into a Model in the world. The origin is the hallway entrance:
--- the hallway runs along +X from it, and rooms sit on its +Z side in raid order,
--- each room's doorway (north wall) facing the hallway.
+-- the hallway runs along +X from it, and rooms sit side by side on its +Z side in raid
+-- order, each room's doorway (north wall) facing the hallway.
 local ServerStorage = game:GetService("ServerStorage")
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Types = require(Shared.Types)
 local Catalog = require(Shared.Catalog)
+local Rules = require(Shared.Rules)
 
 local RoomTemplates = ServerStorage.RoomTemplates
 
-local ROOM_SIZE = 72
-local ROOM_SPACING = 82 -- matches how Jordan laid the templates out side by side
+local ROOM_SIZE = 72 -- rooms touch, so a side doorway opens straight into the next room
 local HALLWAY_WIDTH = 20
 local ENTRANCE_LENGTH = 12 -- hallway before the first doorway, where the player arrives
 local FIX_HOLD_SECONDS = 1.5
@@ -104,11 +104,16 @@ local function findRepairSpot(gameplay: Model, floor: BasePart, roomLabel: strin
 	return placeholderSpot(gameplay, floor, roomLabel)
 end
 
-local function addFixPrompt(spot: BasePart, slot: number, action: string, object: string)
+-- The full cost, even when the player has less: pressing still fixes what they can afford
+local function fixCostText(segment: Types.Segment): string
+	return `Costs {Rules.repairCost(segment, 100 - segment.condition)} bronze`
+end
+
+local function addFixPrompt(spot: BasePart, slot: number, action: string, segment: Types.Segment)
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "FixPrompt"
 	prompt.ActionText = action
-	prompt.ObjectText = object
+	prompt.ObjectText = fixCostText(segment)
 	prompt.HoldDuration = FIX_HOLD_SECONDS
 	prompt.MaxActivationDistance = FIX_PROMPT_DISTANCE
 	prompt.RequiresLineOfSight = false -- a RepairSpot can sit inside other parts, like the trap's
@@ -120,11 +125,10 @@ end
 local function addFixPromptFor(gameplay: Model, floor: BasePart, roomLabel: string, segment: Types.Segment, slot: number, trap: Instance?)
 	local trapSpot = trap and trap:FindFirstChild("RepairSpot")
 	if trapSpot and trapSpot:IsA("BasePart") then
-		addFixPrompt(trapSpot, slot, "Re-arm", "Trap")
+		addFixPrompt(trapSpot, slot, "Re-arm", segment)
 		return
 	end
-	local name = Catalog.rooms[segment.kind].displayName
-	addFixPrompt(findRepairSpot(gameplay, floor, roomLabel), slot, "Tidy up", name)
+	addFixPrompt(findRepairSpot(gameplay, floor, roomLabel), slot, "Tidy up", segment)
 end
 
 -- Mess is optional art: a room without it simply looks tidy, so no warning
@@ -163,8 +167,17 @@ local function refreshRoom(room: Model, segment: Types.Segment, slot: number)
 	old:Destroy()
 end
 
+-- Wear and part-fixes change the cost without changing the look, so the prompt is
+-- relabelled in place: swapping it would cut off a player halfway through a hold
+local function updateFixCost(room: Model, segment: Types.Segment)
+	local prompt = findGameplay(room):FindFirstChild("FixPrompt", true)
+	if prompt and prompt:IsA("ProximityPrompt") then
+		prompt.ObjectText = fixCostText(segment)
+	end
+end
+
 local function roomCenterX(slot: number): number
-	return ENTRANCE_LENGTH + ROOM_SIZE / 2 + (slot - 1) * ROOM_SPACING
+	return ENTRANCE_LENGTH + ROOM_SIZE / 2 + (slot - 1) * ROOM_SIZE
 end
 
 -- Placeholder until Jordan builds a hallway piece
@@ -222,6 +235,8 @@ local function update(model: Model, old: Types.Dungeon, new: Types.Dungeon): boo
 		end
 		if isWorn(old.segments[slot]) ~= isWorn(segment) then
 			refreshRoom(room, segment, slot)
+		elseif isWorn(segment) then
+			updateFixCost(room, segment)
 		end
 	end
 	return true

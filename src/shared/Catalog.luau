@@ -40,7 +40,6 @@ return deepFreeze({
 		basePower = 39, -- tuned with reputation 2026-10-10: a new dungeon starts comfortable; fame brings the threat
 		luckMin = 0.9,
 		luckMax = 1.1,
-		hpPerPower = 1,
 		lootPerPower = 1.75, -- tuned with EconomySim.runAll (2026-10-09)
 		-- The treasure is a dial: to an empty chest, rookies come (weaker, cheap gear);
 		-- a full treasure room draws full-strength parties. Living on rookies is a
@@ -50,19 +49,14 @@ return deepFreeze({
 		-- An escape resets it. Without it, a hired and tended dungeon never loses (2026-10-10).
 		reputationStep = 0.05,
 		reputationMax = 10,
-		-- What players read instead of a number: one title per reputation, 0 to reputationMax
-		reputationTitles = {
-			"Unknown", -- 0
-			"Noticed",
-			"Noticed",
-			"Talked about",
-			"Talked about",
-			"Respected", -- 5
-			"Respected",
-			"Feared",
-			"Feared",
-			"Legendary",
-			"Legendary", -- 10
+		-- Ranks, weakest first. Read from power for players to compare; they change no odds.
+		-- Bands from play data (probes/rank_data.luau, 2026-10-13): most parties are C
+		ranks = {
+			{ letter = "E", minPower = 0 }, -- rookies
+			{ letter = "D", minPower = 25 },
+			{ letter = "C", minPower = 35 },
+			{ letter = "B", minPower = 45 },
+			{ letter = "A", minPower = 55 },
 		},
 		rookieGearValue = 0.5,
 	},

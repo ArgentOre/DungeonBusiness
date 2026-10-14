@@ -12,13 +12,10 @@ local function apply(state: Types.PlayerState, slot: number, kind: Types.MobKind
 	table.insert(mobs, hired)
 	local segments = table.clone(state.dungeon.segments)
 	segments[slot] = { kind = segment.kind, condition = segment.condition, mobs = mobs }
-	return {
-		bronze = state.bronze - hireCost,
-		treasure = state.treasure,
-		spoils = state.spoils,
-		reputation = state.reputation,
-		dungeon = { segments = segments },
-	}
+	local after = table.clone(state)
+	after.bronze -= hireCost
+	after.dungeon = { segments = segments }
+	return after
 end
 
 return {

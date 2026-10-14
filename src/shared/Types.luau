@@ -26,8 +26,7 @@ export type PlayerState = {
 }
 
 export type Party = {
-	hp: number,
-	power: number,
+	power: number, -- also the party's starting HP
 	strength: number, -- 1 for a full party; rookies are weaker and clumsier, so they wear rooms less; a famous dungeon draws stronger
 }
 
@@ -51,6 +50,7 @@ export type RaidResult = {
 	events: { RaidEvent },
 	after: Dungeon,
 	loot: number,
+	party: Party, -- who came, so the raid can be replayed against other rooms
 }
 
 export type RaidReport = {
@@ -61,6 +61,20 @@ export type RaidReport = {
 	endSlot: number, -- room where the party was defeated, or the last room if it escaped
 	treasureTaken: number,
 	reputation: number, -- how famous the dungeon was when this party came
+	fixingWouldHaveHeld: boolean, -- the party escaped, but fully fixed rooms would have stopped it
+	partyPower: number, -- how strong the party was; players read it as a rank
+}
+
+-- A rank is a reading of power, so players compare letters, never numbers
+export type Rank = {
+	letter: string,
+	minPower: number,
+}
+
+-- What the administrator can see coming, as powers; the client shows them as ranks
+export type Outlook = {
+	holds: number, -- the strongest party the dungeon stops as it stands
+	coming: number, -- a typical next party, before luck
 }
 
 export type RoomStats = {

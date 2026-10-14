@@ -5,6 +5,7 @@ local Catalog = require(Shared.Catalog)
 local Rules = require(Shared.Rules)
 local PartyGen = require(script.Parent.PartyGen)
 local RaidSim = require(script.Parent.RaidSim)
+local Condition = require(script.Parent.Condition)
 local Spoils = require(script.Parent.Spoils)
 local Wages = require(script.Parent.Wages)
 
@@ -18,12 +19,7 @@ end
 
 -- The safety net: monsters patch the worst damage themselves, for free
 local function staffPatch(dungeon: Types.Dungeon): Types.Dungeon
-	local floor = Catalog.economy.staffPatchFloor
-	local segments: { Types.Segment } = {}
-	for _, segment in dungeon.segments do
-		table.insert(segments, { kind = segment.kind, condition = math.max(segment.condition, floor), mobs = segment.mobs })
-	end
-	return { segments = segments }
+	return Condition.atLeast(dungeon, Catalog.economy.staffPatchFloor)
 end
 
 -- From rookie strength (lure 0) to full strength (lure 1)
@@ -45,9 +41,14 @@ local function reputationAfter(reputation: number, won: boolean): number
 	return 0
 end
 
+-- How strong the next party is, before luck: what the treasure draws, times the dungeon's fame
+local function nextPartyStrength(state: Types.PlayerState): number
+	return partyStrength(Rules.lure(state)) * fame(state.reputation)
+end
+
 local function play(state: Types.PlayerState, rng: Random): (Types.PlayerState, Types.RaidResult)
 	local lure = Rules.lure(state)
-	local party = PartyGen.make(rng, partyStrength(lure) * fame(state.reputation))
+	local party = PartyGen.make(rng, nextPartyStrength(state))
 	local result = RaidSim.simulate(state.dungeon, party)
 	return {
 		bronze = Wages.pay(state.bronze, result.after),
@@ -60,4 +61,5 @@ end
 
 return {
 	play = play,
+	nextPartyStrength = nextPartyStrength,
 }

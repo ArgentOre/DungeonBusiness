@@ -29,13 +29,13 @@ screen.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 
 local currentState: Types.PlayerState? = nil
 local doorsAreOpen = false
-local nextPartyAt: number? = nil -- os.clock() time; an estimate, the server decides
+local lastPartyAt: number? = nil -- os.clock() time the last party came; the countdown is an estimate, the server decides
 
 -- Top left: bronze, and the toggle that hides the big panels
 local bronzePanel = Ui.panel(screen, 200, 8)
 bronzePanel.Position = UDim2.fromOffset(EDGE, EDGE)
 local bronzeLabel = Ui.text(bronzePanel, "… bronze", Ui.STYLES.money)
-local reputationLabel = Ui.text(bronzePanel, "", Ui.STYLES.muted)
+local outlookLabel = Ui.text(bronzePanel, "", Ui.STYLES.muted)
 
 -- Top right: the one main action, and when the next party is due
 local raidColumn = Ui.group(screen, 6)
@@ -46,7 +46,6 @@ local doorsButton: TextButton
 doorsButton = Ui.primaryButton(raidColumn, "Open the doors", function()
 	doorsAreOpen = not doorsAreOpen
 	doorsButton.Text = if doorsAreOpen then "Close the doors" else "Open the doors"
-	nextPartyAt = if doorsAreOpen then os.clock() else nil
 	SetDoorsOpen:FireServer(doorsAreOpen)
 end)
 local doorsStatus = Ui.text(raidColumn, "Doors closed", Ui.STYLES.muted)
@@ -92,10 +91,17 @@ feed.AnchorPoint = Vector2.new(0.5, 0)
 feed.Position = UDim2.new(0.5, 0, 0, EDGE)
 feed.Size = UDim2.fromOffset(380, 0)
 
-local function render(state: Types.PlayerState)
+-- Ranks, not powers: an exact comparison would tell who wins before the raid is told
+local function renderOutlook(outlook: Types.Outlook)
+	local holds, coming = Rules.rankOf(outlook.holds), Rules.rankOf(outlook.coming)
+	outlookLabel.Text = `Holds Rank {holds.letter} · Rank {coming.letter} parties coming`
+	outlookLabel.TextColor3 = if coming.minPower > holds.minPower then Ui.THEME.needsFix else Ui.THEME.mutedText
+end
+
+local function render(state: Types.PlayerState, outlook: Types.Outlook)
 	currentState = state
 	bronzeLabel.Text = `{state.bronze} bronze`
-	reputationLabel.Text = `Reputation: {Rules.reputationTitle(state.reputation)}`
+	renderOutlook(outlook)
 	RoomPanel.render(roomRows, state)
 end
 
@@ -103,18 +109,15 @@ local function doorsStatusText(): string
 	if not doorsAreOpen then
 		return "Doors closed"
 	end
-	if currentState and Rules.chestEmpty(currentState) then
-		return "Only junk to steal: rookies only"
-	end
-	local secondsLeft = if nextPartyAt then math.ceil(nextPartyAt - os.clock()) else 0
+	local now = os.clock()
+	local secondsLeft = math.ceil(Rules.nextPartyAt(lastPartyAt, now) - now)
 	return if secondsLeft > 0 then `Next party in {secondsLeft}s` else "A party is on the way…"
 end
 
 -- The feed shows how the raid ended only once the log has told it, so the result isn't spoiled
 local function onRaidFinished(events: { Types.RaidEvent }, report: Types.RaidReport)
-	local interval = Catalog.economy.raidIntervalSeconds
-	nextPartyAt = os.clock() + interval
-	RaidLog.narrate(logLines, events, interval * TELLING_SHARE, function()
+	lastPartyAt = os.clock()
+	RaidLog.narrate(logLines, events, Catalog.economy.raidIntervalSeconds * TELLING_SHARE, function()
 		RaidFeed.add(report, events)
 	end)
 end
@@ -122,9 +125,9 @@ end
 StateChanged.OnClientEvent:Connect(render)
 RaidFinished.OnClientEvent:Connect(onRaidFinished)
 
-local initialState = GetState:InvokeServer() :: Types.PlayerState?
-if initialState then
-	render(initialState)
+local initialState, initialOutlook = GetState:InvokeServer()
+if initialState and initialOutlook then
+	render(initialState :: Types.PlayerState, initialOutlook :: Types.Outlook)
 end
 
 task.spawn(function()

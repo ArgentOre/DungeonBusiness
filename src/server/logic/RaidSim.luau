@@ -2,6 +2,7 @@
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Types = require(Shared.Types)
 local Catalog = require(Shared.Catalog)
+local Condition = require(script.Parent.Condition)
 
 type Events = { Types.RaidEvent }
 
@@ -29,19 +30,27 @@ local function mobsDamage(mobs: { Types.Mob }, from: number): number
 	return total
 end
 
+local function startingHps(mobs: { Types.Mob }): { number }
+	local hps = {}
+	for i, mob in mobs do
+		hps[i] = Catalog.mobs[mob.kind].maxHp
+	end
+	return hps
+end
+
+-- Mobs attack together but fall one at a time: every mob still standing hits the
+-- party each round, and the party strikes the one at the front
 local function fightMobs(segment: Types.Segment, slot: number, party: Types.Party, partyHp: number, events: Events): number
-	local mobs = segment.mobs
+	local hps = startingHps(segment.mobs)
 	local front = 1
-	local frontHp = if #mobs > 0 then Catalog.mobs[mobs[1].kind].maxHp else 0
-	while partyHp > 0 and front <= #mobs do
-		local damage = math.round(mobsDamage(mobs, front) * effectiveness(segment))
+	while partyHp > 0 and front <= #hps do
+		local damage = math.round(mobsDamage(segment.mobs, front) * effectiveness(segment))
 		partyHp -= damage
 		addEvent(events, { kind = "MobHit", slot = slot, amount = damage })
-		frontHp -= party.power
-		if frontHp <= 0 then
+		hps[front] -= party.power
+		if hps[front] <= 0 then
 			addEvent(events, { kind = "MobDefeated", slot = slot })
 			front += 1
-			frontHp = if front <= #mobs then Catalog.mobs[mobs[front].kind].maxHp else 0
 		end
 	end
 	return partyHp
@@ -53,7 +62,7 @@ local function runSegment(segment: Types.Segment, slot: number, party: Types.Par
 	partyHp = fightMobs(segment, slot, party, partyHp, events)
 	local wear = math.round(Catalog.rooms[segment.kind].wearPerRaid * party.strength)
 	addEvent(events, { kind = "RoomDamaged", slot = slot, amount = wear })
-	return partyHp, { kind = segment.kind, condition = math.max(0, segment.condition - wear), mobs = segment.mobs }
+	return partyHp, Condition.withCondition(segment, math.max(0, segment.condition - wear))
 end
 
 local function simulate(dungeon: Types.Dungeon, party: Types.Party): Types.RaidResult
@@ -62,7 +71,7 @@ local function simulate(dungeon: Types.Dungeon, party: Types.Party): Types.RaidR
 	assert(party.power >= 1, "A party with no power could never finish a fight")
 	local events: Events = {}
 	local after: { Types.Segment } = {}
-	local partyHp = party.hp
+	local partyHp = party.power
 	for slot, segment in dungeon.segments do
 		if partyHp <= 0 then
 			table.insert(after, segment)
@@ -84,6 +93,7 @@ local function simulate(dungeon: Types.Dungeon, party: Types.Party): Types.RaidR
 		events = events,
 		after = { segments = after },
 		loot = math.round(party.power * Catalog.party.lootPerPower),
+		party = party,
 	}
 end
 

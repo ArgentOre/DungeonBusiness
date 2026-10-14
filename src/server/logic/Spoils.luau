@@ -17,24 +17,18 @@ end
 
 -- Apply an already-checked sale (see Rules.canSell)
 local function sell(state: Types.PlayerState, amount: number): Types.PlayerState
-	return {
-		bronze = state.bronze + amount * Catalog.economy.bronzePerSpoil,
-		treasure = state.treasure,
-		spoils = state.spoils - amount,
-		reputation = state.reputation,
-		dungeon = state.dungeon,
-	}
+	local after = table.clone(state)
+	after.bronze += amount * Catalog.economy.bronzePerSpoil
+	after.spoils -= amount
+	return after
 end
 
 -- Apply an already-checked stocking (see Rules.canStock)
 local function stock(state: Types.PlayerState, amount: number): Types.PlayerState
-	return {
-		bronze = state.bronze,
-		treasure = state.treasure + amount,
-		spoils = state.spoils - amount,
-		reputation = state.reputation,
-		dungeon = state.dungeon,
-	}
+	local after = table.clone(state)
+	after.treasure += amount
+	after.spoils -= amount
+	return after
 end
 
 return {

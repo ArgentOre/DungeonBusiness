@@ -24,9 +24,13 @@ local function roomName(state: Types.PlayerState, slot: number): string
 	return if segment then Catalog.rooms[segment.kind].displayName else "the dungeon"
 end
 
+local function rankLetter(report: Types.RaidReport): string
+	return Rules.rankOf(report.partyPower).letter
+end
+
 local function headline(report: Types.RaidReport): string
 	if report.won then
-		return if report.rookies then "Rookies defeated!" else "The dungeon held!"
+		return `Rank {rankLetter(report)} party defeated!`
 	end
 	return if report.treasureTaken > 0 then `They stole {report.treasureTaken} treasure!` else "They got away!"
 end
@@ -36,9 +40,25 @@ local function whereItEnded(report: Types.RaidReport, state: Types.PlayerState):
 		return `They gave up in the {roomName(state, report.endSlot)}.`
 	end
 	if report.reputation > 0 then
-		return `They kept their gear, so nothing dropped. Word spreads that your dungeon can be beaten: it's {Rules.reputationTitle(0)} again.`
+		return "They kept their gear, so nothing dropped. Word spreads that your dungeon can be beaten, so weaker parties come for a while."
 	end
 	return "They kept their gear, so nothing dropped."
+end
+
+-- Why the raid went the way it did, in plain words, or nil when nothing stood out.
+-- A win against a famous party needs no reason: fame only explains why they got away
+local function reason(report: Types.RaidReport): string?
+	if report.fixingWouldHaveHeld then
+		return "worn rooms let them through"
+	end
+	if report.rookies then
+		return "an empty chest only draws rookies"
+	end
+	if report.won then
+		return nil
+	end
+	local rank = `Rank {rankLetter(report)} party`
+	return if report.reputation > 0 then `your fame drew a {rank}` else `a {rank}, too tough to stop`
 end
 
 local function signed(amount: number): string
@@ -70,10 +90,15 @@ end
 
 -- One line for the notice after each raid; tapping the notice opens the full card
 local function summary(report: Types.RaidReport): string
-	if report.spoilsDropped > 0 then
-		return `{headline(report)}  +{report.spoilsDropped} spoils`
+	local line = headline(report)
+	local why = reason(report)
+	if why then
+		line ..= ` · {why}`
 	end
-	return headline(report)
+	if report.spoilsDropped > 0 then
+		line ..= `  +{report.spoilsDropped} spoils`
+	end
+	return line
 end
 
 local function show(screen: ScreenGui, report: Types.RaidReport, state: Types.PlayerState, onShowLog: () -> ())
@@ -82,6 +107,10 @@ local function show(screen: ScreenGui, report: Types.RaidReport, state: Types.Pl
 	frame.AnchorPoint = Vector2.new(0.5, 0.5)
 	frame.Position = UDim2.fromScale(0.5, 0.5)
 	Ui.text(frame, headline(report), Ui.STYLES.heading)
+	local why = reason(report)
+	if why then
+		Ui.text(frame, `Why: {why}`, Ui.STYLES.label)
+	end
 	Ui.text(frame, whereItEnded(report, state), Ui.STYLES.muted)
 	addPayday(frame, report)
 	addNeedsFixing(frame, state)
@@ -96,5 +125,4 @@ end
 return {
 	summary = summary,
 	show = show,
-	hide = hide,
 }
