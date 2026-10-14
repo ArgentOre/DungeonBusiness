@@ -15,9 +15,20 @@
         "StockSpoils": { "$className": "RemoteEvent" },
         "BuyMob": { "$className": "RemoteEvent" },
         "StateChanged": { "$className": "RemoteEvent" },
-        "RaidFinished": { "$className": "RemoteEvent" }
+        "RaidFinished": { "$className": "RemoteEvent" },
+        "DebugTravel": { "$className": "RemoteEvent" }
       }
     },
+
+"Workspace": {
+  "$className": "Workspace",
+  "World": {
+    "$className": "Folder",
+    "Hub": {
+      "$path": "assets/world/Hub.rbxm"
+    }
+  }
+},
 
 "ServerStorage": {
   "RoomTemplates": {

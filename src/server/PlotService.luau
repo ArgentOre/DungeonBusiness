@@ -1,5 +1,6 @@
 --!strict
--- Gives each player a plot, keeps their dungeon Model there, and spawns them at its entrance.
+-- Gives each player a plot and keeps their dungeon Model there. Players spawn in the hub
+-- (Roblox's SpawnLocation); travel to the dungeon is a separate step.
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Types = require(Shared.Types)
 local DungeonBuilder = require(script.Parent.DungeonBuilder)
@@ -13,7 +14,6 @@ type Plot = {
 	index: number,
 	model: Model?,
 	shown: Types.Dungeon?, -- what `model` currently shows
-	spawnConnection: RBXScriptConnection,
 }
 
 local plots: { [Player]: Plot } = {}
@@ -47,13 +47,14 @@ local function moveToEntrance(character: Model, index: number)
 end
 
 local function claim(player: Player)
-	local index = firstFreeIndex()
-	local spawnConnection = player.CharacterAdded:Connect(function(character)
-		moveToEntrance(character, index)
-	end)
-	plots[player] = { index = index, model = nil, shown = nil, spawnConnection = spawnConnection }
-	if player.Character then
-		task.spawn(moveToEntrance, player.Character, index)
+	plots[player] = { index = firstFreeIndex(), model = nil, shown = nil }
+end
+
+-- Puts the player at their dungeon's entrance, if they have a plot and a character
+local function sendToDungeon(player: Player)
+	local plot, character = plots[player], player.Character
+	if plot and character then
+		moveToEntrance(character, plot.index)
 	end
 end
 
@@ -94,7 +95,6 @@ local function release(player: Player)
 	if not plot then
 		return
 	end
-	plot.spawnConnection:Disconnect()
 	if plot.model then
 		plot.model:Destroy()
 	end
@@ -103,6 +103,7 @@ end
 
 return {
 	claim = claim,
+	sendToDungeon = sendToDungeon,
 	show = show,
 	owns = owns,
 	release = release,
