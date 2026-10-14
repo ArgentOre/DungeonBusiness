@@ -83,6 +83,34 @@ local function rankOf(power: number): Types.Rank
 	return found
 end
 
+-- Compared as ranks, never powers: an exact comparison would tell who wins before the raid is told
+local function verdict(partyPower: number, holds: number): Types.Verdict
+	local party, dungeon = rankOf(partyPower).minPower, rankOf(holds).minPower
+	if party < dungeon then
+		return "Safe"
+	elseif party == dungeon then
+		return "Close"
+	end
+	return "Danger"
+end
+
+-- Worn rooms come first: they're the cause the administrator can fix. A win against a
+-- famous party has no cause: fame only explains why a party got away
+local function raidCause(report: Types.RaidReport): Types.RaidCause?
+	if report.fixingWouldHaveHeld then
+		return "WornRooms"
+	end
+	if report.rookies then
+		return "Rookies"
+	end
+	if report.won then
+		return nil
+	elseif report.reputation > 0 then
+		return "Fame"
+	end
+	return "TooTough"
+end
+
 local function isWholeAmount(amount: number): boolean
 	return amount > 0 and amount == math.floor(amount)
 end
@@ -118,6 +146,8 @@ return {
 	chestEmpty = chestEmpty,
 	nextPartyAt = nextPartyAt,
 	rankOf = rankOf,
+	verdict = verdict,
+	raidCause = raidCause,
 	lure = lure,
 	canSell = canSell,
 	stockable = stockable,
