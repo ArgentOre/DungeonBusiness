@@ -71,6 +71,12 @@ export type Rank = {
 	minPower: number,
 }
 
+-- The one thing that best explains a raid (nil for a plain win: nothing to explain)
+export type RaidCause = "WornRooms" | "Rookies" | "Fame" | "TooTough"
+
+-- What's coming against what the dungeon holds, compared as ranks
+export type Verdict = "Safe" | "Close" | "Danger"
+
 -- What the administrator can see coming, as powers; the client shows them as ranks
 export type Outlook = {
 	holds: number, -- the strongest party the dungeon stops as it stands

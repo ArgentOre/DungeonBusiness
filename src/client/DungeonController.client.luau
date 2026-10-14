@@ -1,5 +1,5 @@
 --!strict
--- The HUD: bronze, the doors, the raid feed, the dungeon's rooms, and the raid log.
+-- The HUD: bronze, the doors, Mai at the front desk, the dungeon's rooms, and the raid log.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -11,7 +11,8 @@ local Rules = require(Shared:WaitForChild("Rules"))
 local Ui = require(script.Parent:WaitForChild("Ui"))
 local RaidReportView = require(script.Parent:WaitForChild("RaidReportView"))
 local RoomPanel = require(script.Parent:WaitForChild("RoomPanel"))
-local RaidFeed = require(script.Parent:WaitForChild("RaidFeed"))
+local Lines = require(script.Parent:WaitForChild("Lines"))
+local Mai = require(script.Parent:WaitForChild("Mai"))
 local RaidLog = require(script.Parent:WaitForChild("RaidLog"))
 
 local GetState = Remotes:WaitForChild("GetState") :: RemoteFunction
@@ -28,7 +29,15 @@ screen.IgnoreGuiInset = false
 screen.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 
 local currentState: Types.PlayerState? = nil
+local currentOutlook: Types.Outlook? = nil
 local doorsAreOpen = false
+local lastRaid: { report: Types.RaidReport, events: { Types.RaidEvent } }? = nil -- what tapping Mai opens
+local lineCount = 0 -- moves through each moment's lines, so the same line doesn't come twice in a row
+
+local function nextVariant(): number
+	lineCount += 1
+	return lineCount
+end
 local lastPartyAt: number? = nil -- os.clock() time the last party came; the countdown is an estimate, the server decides
 
 -- Top left: bronze, and the toggle that hides the big panels
@@ -47,6 +56,7 @@ doorsButton = Ui.primaryButton(raidColumn, "Open the doors", function()
 	doorsAreOpen = not doorsAreOpen
 	doorsButton.Text = if doorsAreOpen then "Close the doors" else "Open the doors"
 	SetDoorsOpen:FireServer(doorsAreOpen)
+	Mai.say(Lines.doors(doorsAreOpen, nextVariant()), not doorsAreOpen)
 end)
 local doorsStatus = Ui.text(raidColumn, "Doors closed", Ui.STYLES.muted)
 
@@ -75,21 +85,24 @@ panelToggle = Ui.secondaryButton(bronzePanel, "Hide panels", function()
 	panelToggle.Text = if visible then "Hide panels" else "Show panels"
 end)
 
-local function openRaid(entry: RaidFeed.Entry)
-	if not currentState then
+local function openLastRaid()
+	local raid, state = lastRaid, currentState
+	if not (raid and state) then
 		return
 	end
-	RaidReportView.show(screen, entry.report, currentState, function()
-		RaidLog.show(logLines, entry.events)
+	RaidReportView.show(screen, raid.report, state, function()
+		RaidLog.show(logLines, raid.events)
 		logPanel.Visible = true
 	end)
 end
 
--- Top centre: the last few raids; tap one for its full report
-local feed = RaidFeed.create(screen, openRaid)
-feed.AnchorPoint = Vector2.new(0.5, 0)
-feed.Position = UDim2.new(0.5, 0, 0, EDGE)
-feed.Size = UDim2.fromOffset(380, 0)
+-- Top centre for now (the room panel holds the bottom left until the terminal lands):
+-- Mai, who tells each raid in one line. Tap her line for the full report
+local frontDesk = Ui.group(screen, 0)
+frontDesk.AnchorPoint = Vector2.new(0.5, 0)
+frontDesk.Position = UDim2.new(0.5, 0, 0, EDGE)
+frontDesk.Size = UDim2.fromOffset(380, 0)
+Mai.create(frontDesk, openLastRaid)
 
 -- Ranks, not powers: an exact comparison would tell who wins before the raid is told
 local function renderOutlook(outlook: Types.Outlook)
@@ -100,6 +113,7 @@ end
 
 local function render(state: Types.PlayerState, outlook: Types.Outlook)
 	currentState = state
+	currentOutlook = outlook
 	bronzeLabel.Text = `{state.bronze} bronze`
 	renderOutlook(outlook)
 	RoomPanel.render(roomRows, state)
@@ -114,11 +128,17 @@ local function doorsStatusText(): string
 	return if secondsLeft > 0 then `Next party in {secondsLeft}s` else "A party is on the way…"
 end
 
--- The feed shows how the raid ended only once the log has told it, so the result isn't spoiled
+-- Mai announces the party as the telling starts, and says how it went only once it's told,
+-- so the result isn't spoiled
 local function onRaidFinished(events: { Types.RaidEvent }, report: Types.RaidReport)
 	lastPartyAt = os.clock()
+	local outlook = currentOutlook
+	if outlook then
+		Mai.say(Lines.arrival(report, outlook.holds, nextVariant()))
+	end
 	RaidLog.narrate(logLines, events, Catalog.economy.raidIntervalSeconds * TELLING_SHARE, function()
-		RaidFeed.add(report, events)
+		lastRaid = { report = report, events = events }
+		Mai.say(Lines.result(report, nextVariant()))
 	end)
 end
 

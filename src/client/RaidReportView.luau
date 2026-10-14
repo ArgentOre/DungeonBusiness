@@ -45,20 +45,20 @@ local function whereItEnded(report: Types.RaidReport, state: Types.PlayerState):
 	return "They kept their gear, so nothing dropped."
 end
 
--- Why the raid went the way it did, in plain words, or nil when nothing stood out.
--- A win against a famous party needs no reason: fame only explains why they got away
+-- Why the raid went the way it did, in plain words, or nil when nothing stood out
 local function reason(report: Types.RaidReport): string?
-	if report.fixingWouldHaveHeld then
-		return "worn rooms let them through"
-	end
-	if report.rookies then
-		return "an empty chest only draws rookies"
-	end
-	if report.won then
-		return nil
-	end
+	local cause = Rules.raidCause(report)
 	local rank = `Rank {rankLetter(report)} party`
-	return if report.reputation > 0 then `your fame drew a {rank}` else `a {rank}, too tough to stop`
+	if cause == "WornRooms" then
+		return "worn rooms let them through"
+	elseif cause == "Rookies" then
+		return "an empty chest only draws rookies"
+	elseif cause == "Fame" then
+		return `your fame drew a {rank}`
+	elseif cause == "TooTough" then
+		return `a {rank}, too tough to stop`
+	end
+	return nil
 end
 
 local function signed(amount: number): string
@@ -88,19 +88,6 @@ local function addNeedsFixing(parent: Frame, state: Types.PlayerState)
 	end
 end
 
--- One line for the notice after each raid; tapping the notice opens the full card
-local function summary(report: Types.RaidReport): string
-	local line = headline(report)
-	local why = reason(report)
-	if why then
-		line ..= ` · {why}`
-	end
-	if report.spoilsDropped > 0 then
-		line ..= `  +{report.spoilsDropped} spoils`
-	end
-	return line
-end
-
 local function show(screen: ScreenGui, report: Types.RaidReport, state: Types.PlayerState, onShowLog: () -> ())
 	hide()
 	local frame = Ui.panel(screen, CARD_WIDTH, 16)
@@ -123,6 +110,5 @@ local function show(screen: ScreenGui, report: Types.RaidReport, state: Types.Pl
 end
 
 return {
-	summary = summary,
 	show = show,
 }
