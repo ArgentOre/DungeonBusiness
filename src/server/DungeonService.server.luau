@@ -2,6 +2,7 @@
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage.Shared
 local Remotes = ReplicatedStorage.Remotes
@@ -116,6 +117,20 @@ local function onStockSpoils(player: Player, amount: unknown)
 	setState(player, Spoils.stock(state, amount))
 end
 
+-- Admin debug tool, Studio only: until real travel exists (conveyors, Milestone 2), a button
+-- moves you between the hub and your dungeon. "Hub" respawns you at the hub's SpawnLocation,
+-- so no hub position lives in code
+local function onDebugTravel(player: Player, destination: unknown)
+	if not RunService:IsStudio() then
+		return
+	end
+	if destination == "Dungeon" then
+		PlotService.sendToDungeon(player)
+	elseif destination == "Hub" then
+		player:LoadCharacter()
+	end
+end
+
 local function toMobKind(name: string): Types.MobKind?
 	for kind: Types.MobKind in Catalog.mobs do
 		if kind == name then
@@ -148,6 +163,7 @@ Remotes.SetDoorsOpen.OnServerEvent:Connect(onSetDoorsOpen)
 Remotes.BuyMob.OnServerEvent:Connect(onBuyMob)
 Remotes.SellSpoils.OnServerEvent:Connect(onSellSpoils)
 Remotes.StockSpoils.OnServerEvent:Connect(onStockSpoils)
+Remotes.DebugTravel.OnServerEvent:Connect(onDebugTravel)
 ProximityPromptService.PromptTriggered:Connect(onPromptTriggered)
 
 task.spawn(function()

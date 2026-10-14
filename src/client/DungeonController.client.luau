@@ -2,6 +2,7 @@
 -- The HUD: bronze, the doors, Mai at the front desk, the dungeon's rooms, and the raid log.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -19,6 +20,7 @@ local GetState = Remotes:WaitForChild("GetState") :: RemoteFunction
 local SetDoorsOpen = Remotes:WaitForChild("SetDoorsOpen") :: RemoteEvent
 local StateChanged = Remotes:WaitForChild("StateChanged") :: RemoteEvent
 local RaidFinished = Remotes:WaitForChild("RaidFinished") :: RemoteEvent
+local DebugTravel = Remotes:WaitForChild("DebugTravel") :: RemoteEvent
 
 local EDGE = 16 -- gap between the HUD and the screen edge
 local TELLING_SHARE = 0.75 -- a raid is told over most of the gap before the next party, leaving a breath
@@ -76,6 +78,17 @@ local logLines = Ui.group(logPanel, 2)
 Ui.secondaryButton(logPanel, "Close", function()
 	logPanel.Visible = false
 end)
+
+-- Admin debug tool, Studio only (the server checks too): travel until conveyors exist
+if RunService:IsStudio() then
+	local inDungeon = false
+	local travelButton: TextButton
+	travelButton = Ui.secondaryButton(bronzePanel, "[debug] Go to my dungeon", function()
+		inDungeon = not inDungeon
+		DebugTravel:FireServer(if inDungeon then "Dungeon" else "Hub")
+		travelButton.Text = if inDungeon then "[debug] Go to the hub" else "[debug] Go to my dungeon"
+	end)
+end
 
 local panelToggle: TextButton
 panelToggle = Ui.secondaryButton(bronzePanel, "Hide panels", function()
