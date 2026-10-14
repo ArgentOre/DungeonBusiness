@@ -35,7 +35,7 @@ local lastPartyAt: number? = nil -- os.clock() time the last party came; the cou
 local bronzePanel = Ui.panel(screen, 200, 8)
 bronzePanel.Position = UDim2.fromOffset(EDGE, EDGE)
 local bronzeLabel = Ui.text(bronzePanel, "… bronze", Ui.STYLES.money)
-local reputationLabel = Ui.text(bronzePanel, "", Ui.STYLES.muted)
+local outlookLabel = Ui.text(bronzePanel, "", Ui.STYLES.muted)
 
 -- Top right: the one main action, and when the next party is due
 local raidColumn = Ui.group(screen, 6)
@@ -91,10 +91,17 @@ feed.AnchorPoint = Vector2.new(0.5, 0)
 feed.Position = UDim2.new(0.5, 0, 0, EDGE)
 feed.Size = UDim2.fromOffset(380, 0)
 
-local function render(state: Types.PlayerState)
+-- Ranks, not powers: an exact comparison would tell who wins before the raid is told
+local function renderOutlook(outlook: Types.Outlook)
+	local holds, coming = Rules.rankOf(outlook.holds), Rules.rankOf(outlook.coming)
+	outlookLabel.Text = `Holds Rank {holds.letter} · Rank {coming.letter} parties coming`
+	outlookLabel.TextColor3 = if coming.minPower > holds.minPower then Ui.THEME.needsFix else Ui.THEME.mutedText
+end
+
+local function render(state: Types.PlayerState, outlook: Types.Outlook)
 	currentState = state
 	bronzeLabel.Text = `{state.bronze} bronze`
-	reputationLabel.Text = `Reputation: {Rules.reputationTitle(state.reputation)}`
+	renderOutlook(outlook)
 	RoomPanel.render(roomRows, state)
 end
 
@@ -118,9 +125,9 @@ end
 StateChanged.OnClientEvent:Connect(render)
 RaidFinished.OnClientEvent:Connect(onRaidFinished)
 
-local initialState = GetState:InvokeServer() :: Types.PlayerState?
-if initialState then
-	render(initialState)
+local initialState, initialOutlook = GetState:InvokeServer()
+if initialState and initialOutlook then
+	render(initialState :: Types.PlayerState, initialOutlook :: Types.Outlook)
 end
 
 task.spawn(function()

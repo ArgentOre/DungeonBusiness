@@ -29,6 +29,7 @@ local function make(before: Types.PlayerState, after: Types.PlayerState, result:
 		treasureTaken = before.treasure - after.treasure,
 		reputation = before.reputation,
 		fixingWouldHaveHeld = fixingWouldHaveHeld(before.dungeon, result),
+		partyPower = result.party.power,
 	}
 end
 

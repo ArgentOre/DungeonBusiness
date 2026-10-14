@@ -24,9 +24,13 @@ local function roomName(state: Types.PlayerState, slot: number): string
 	return if segment then Catalog.rooms[segment.kind].displayName else "the dungeon"
 end
 
+local function rankLetter(report: Types.RaidReport): string
+	return Rules.rankOf(report.partyPower).letter
+end
+
 local function headline(report: Types.RaidReport): string
 	if report.won then
-		return if report.rookies then "Rookies defeated!" else "The dungeon held!"
+		return `Rank {rankLetter(report)} party defeated!`
 	end
 	return if report.treasureTaken > 0 then `They stole {report.treasureTaken} treasure!` else "They got away!"
 end
@@ -36,7 +40,7 @@ local function whereItEnded(report: Types.RaidReport, state: Types.PlayerState):
 		return `They gave up in the {roomName(state, report.endSlot)}.`
 	end
 	if report.reputation > 0 then
-		return `They kept their gear, so nothing dropped. Word spreads that your dungeon can be beaten: it's {Rules.reputationTitle(0)} again.`
+		return "They kept their gear, so nothing dropped. Word spreads that your dungeon can be beaten, so weaker parties come for a while."
 	end
 	return "They kept their gear, so nothing dropped."
 end
@@ -53,7 +57,8 @@ local function reason(report: Types.RaidReport): string?
 	if report.won then
 		return nil
 	end
-	return if report.reputation > 0 then "your fame drew a tougher party" else "a party too tough to stop"
+	local rank = `Rank {rankLetter(report)} party`
+	return if report.reputation > 0 then `your fame drew a {rank}` else `a {rank}, too tough to stop`
 end
 
 local function signed(amount: number): string

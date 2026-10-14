@@ -15,6 +15,7 @@ local RaidReport = require(Logic.RaidReport)
 local Repair = require(Logic.Repair)
 local Spoils = require(Logic.Spoils)
 local Hire = require(Logic.Hire)
+local Outlook = require(Logic.Outlook)
 local PlotService = require(script.Parent.PlotService)
 
 local states: { [Player]: Types.PlayerState } = {}
@@ -25,7 +26,7 @@ local rng = Random.new()
 local function setState(player: Player, state: Types.PlayerState)
 	states[player] = state
 	PlotService.show(player, state.dungeon)
-	Remotes.StateChanged:FireClient(player, state)
+	Remotes.StateChanged:FireClient(player, state, Outlook.of(state))
 end
 
 local function onPlayerAdded(player: Player)
@@ -42,8 +43,9 @@ local function onPlayerRemoving(player: Player)
 	PlotService.release(player)
 end
 
-local function onGetState(player: Player): Types.PlayerState?
-	return states[player]
+local function onGetState(player: Player): (Types.PlayerState?, Types.Outlook?)
+	local state = states[player]
+	return state, if state then Outlook.of(state) else nil
 end
 
 -- The interval is enforced here, not by the loop, so toggling the doors can't speed up raids

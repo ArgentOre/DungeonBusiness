@@ -49,19 +49,14 @@ return deepFreeze({
 		-- An escape resets it. Without it, a hired and tended dungeon never loses (2026-10-10).
 		reputationStep = 0.05,
 		reputationMax = 10,
-		-- What players read instead of a number: one title per reputation, 0 to reputationMax
-		reputationTitles = {
-			"Unknown", -- 0
-			"Noticed",
-			"Noticed",
-			"Talked about",
-			"Talked about",
-			"Respected", -- 5
-			"Respected",
-			"Feared",
-			"Feared",
-			"Legendary",
-			"Legendary", -- 10
+		-- Ranks, weakest first. Read from power for players to compare; they change no odds.
+		-- Bands from play data (probes/rank_data.luau, 2026-10-13): most parties are C
+		ranks = {
+			{ letter = "E", minPower = 0 }, -- rookies
+			{ letter = "D", minPower = 25 },
+			{ letter = "C", minPower = 35 },
+			{ letter = "B", minPower = 45 },
+			{ letter = "A", minPower = 55 },
 		},
 		rookieGearValue = 0.5,
 	},
