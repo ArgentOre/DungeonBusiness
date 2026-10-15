@@ -83,6 +83,7 @@ export type Verdict = "Safe" | "Close" | "Danger"
 -- What the administrator can see coming, as powers; the client shows them as ranks
 export type Outlook = {
 	holds: number, -- the strongest party the dungeon stops as it stands
+	holdsFixed: number, -- the same, with every room fixed: what fixing is worth
 	coming: number, -- a typical next party, before luck
 }
 

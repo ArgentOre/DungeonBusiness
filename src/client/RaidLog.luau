@@ -38,9 +38,9 @@ local function addLine(lines: Instance, event: Types.RaidEvent)
 	Ui.text(lines, EventText.format(event), Ui.STYLES.muted)
 end
 
--- The whole log at once: for a raid that has already been told
+-- The whole log at once, for a raid that has already been told. It goes in its own
+-- container, so the raid being told elsewhere carries on
 local function show(lines: Instance, events: { Types.RaidEvent })
-	stop()
 	Ui.clear(lines)
 	for _, event in events do
 		addLine(lines, event)

@@ -47,6 +47,10 @@ return deepFreeze({
 	mai = {
 		portraits = maiPortraits,
 	},
+	-- The server puts this prompt on each hub desk; the client opens the terminal when it's used
+	terminal = {
+		promptName = "LedgerPrompt",
+	},
 	party = {
 		-- Every party starts from the same base, so hiring makes the dungeon stronger
 		-- instead of drawing stronger parties. Treasure (strength) and a little luck move it.

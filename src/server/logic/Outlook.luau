@@ -1,11 +1,12 @@
 --!strict
 -- What the administrator can see coming: the strongest party the dungeon stops as it
--- stands now, and how strong the next parties will typically be.
+-- stands now and fully fixed, and how strong the next parties will typically be.
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Types = require(Shared.Types)
 local PartyGen = require(script.Parent.PartyGen)
 local PlayRaid = require(script.Parent.PlayRaid)
 local RaidSim = require(script.Parent.RaidSim)
+local Condition = require(script.Parent.Condition)
 
 -- Raids are deterministic and a stronger party never does worse, so the first power
 -- that escapes marks the line. The search always ends: a strong enough party knocks out
@@ -21,6 +22,7 @@ end
 local function of(state: Types.PlayerState): Types.Outlook
 	return {
 		holds = strongestHeld(state.dungeon),
+		holdsFixed = strongestHeld(Condition.atLeast(state.dungeon, 100)),
 		coming = PartyGen.typicalPower(PlayRaid.nextPartyStrength(state)),
 	}
 end
