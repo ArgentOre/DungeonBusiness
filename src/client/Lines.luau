@@ -7,7 +7,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Types = require(Shared:WaitForChild("Types"))
 local Rules = require(Shared:WaitForChild("Rules"))
 
-export type Mood = "Relaxed" | "Alert" | "Worried" | "Pleased" | "Sheepish"
+export type Mood = Types.Mood
 export type Line = { text: string, mood: Mood }
 
 -- "%s" is the party's rank letter
