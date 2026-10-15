@@ -87,6 +87,8 @@ local function say(line: Lines.Line, lasting: boolean?)
 		task.delay(LINE_SECONDS, function()
 			if saying == mine then
 				shown.bubble.Visible = false
+				-- Quiet means relaxed: a faded alert or worried face reads as staring aghast
+				shown.portrait.Image = Catalog.mai.portraits[FIRST_MOOD]
 				shown.portrait.ImageTransparency = QUIET_TRANSPARENCY
 			end
 		end)
