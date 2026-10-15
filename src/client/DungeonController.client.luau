@@ -46,7 +46,8 @@ local lastPartyAt: number? = nil -- os.clock() time the last party came; the cou
 local bronzePanel = Ui.panel(screen, 200, 8)
 bronzePanel.Position = UDim2.fromOffset(EDGE, EDGE)
 local bronzeLabel = Ui.text(bronzePanel, "… bronze", Ui.STYLES.money)
-local outlookLabel = Ui.text(bronzePanel, "", Ui.STYLES.muted)
+local holdsLabel = Ui.text(bronzePanel, "", Ui.STYLES.label)
+local comingLabel = Ui.text(bronzePanel, "", Ui.STYLES.label)
 
 -- Top right: the one main action, and when the next party is due
 local raidColumn = Ui.group(screen, 6)
@@ -109,19 +110,20 @@ local function openLastRaid()
 	end)
 end
 
--- Top centre for now (the room panel holds the bottom left until the terminal lands):
--- Mai, who tells each raid in one line. Tap her line for the full report
+-- Bottom centre, between the rooms and the log: Mai, who tells each raid in one line.
+-- Tap her line for the full report
 local frontDesk = Ui.group(screen, 0)
-frontDesk.AnchorPoint = Vector2.new(0.5, 0)
-frontDesk.Position = UDim2.new(0.5, 0, 0, EDGE)
-frontDesk.Size = UDim2.fromOffset(380, 0)
+frontDesk.AnchorPoint = Vector2.new(0.5, 1)
+frontDesk.Position = UDim2.new(0.5, 0, 1, -EDGE)
+frontDesk.Size = UDim2.fromOffset(500, 0)
 Mai.create(frontDesk, openLastRaid)
 
 -- Ranks, not powers: an exact comparison would tell who wins before the raid is told
 local function renderOutlook(outlook: Types.Outlook)
-	local holds, coming = Rules.rankOf(outlook.holds), Rules.rankOf(outlook.coming)
-	outlookLabel.Text = `Holds Rank {holds.letter} · Rank {coming.letter} parties coming`
-	outlookLabel.TextColor3 = if coming.minPower > holds.minPower then Ui.THEME.needsFix else Ui.THEME.mutedText
+	holdsLabel.Text = `Your dungeon: Rank {Rules.rankOf(outlook.holds).letter}`
+	comingLabel.Text = `Coming: Rank {Rules.rankOf(outlook.coming).letter}`
+	local danger = Rules.verdict(outlook.coming, outlook.holds) == "Danger"
+	comingLabel.TextColor3 = if danger then Ui.THEME.needsFix else Ui.THEME.text
 end
 
 local function render(state: Types.PlayerState, outlook: Types.Outlook)

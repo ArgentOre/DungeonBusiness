@@ -10,9 +10,10 @@ local Lines = require(script.Parent:WaitForChild("Lines"))
 local Ui = require(script.Parent:WaitForChild("Ui"))
 
 local LINE_SECONDS = 6 -- long enough to read twice, short enough not to pile up
-local PORTRAIT_SIZE = 80
-local BUBBLE_WIDTH = 300
+local PORTRAIT_SIZE = 100
+local BUBBLE_WIDTH = 375
 local FIRST_MOOD: Types.Mood = "Relaxed"
+local QUIET_TRANSPARENCY = 0.6 -- with nothing to say she fades back, so she isn't always watching
 
 export type Parts = { portrait: ImageLabel, bubble: TextButton }
 
@@ -24,6 +25,7 @@ local function makePortrait(parent: Instance): ImageLabel
 	portrait.Size = UDim2.fromOffset(PORTRAIT_SIZE, PORTRAIT_SIZE)
 	portrait.BackgroundTransparency = 1
 	portrait.Image = Catalog.mai.portraits[FIRST_MOOD]
+	portrait.ImageTransparency = QUIET_TRANSPARENCY
 	portrait.Parent = parent
 	return portrait
 end
@@ -35,7 +37,7 @@ local function makeBubble(parent: Instance, onTap: () -> ()): TextButton
 	bubble.BackgroundColor3 = Ui.THEME.text
 	bubble.TextColor3 = Ui.THEME.onAccent
 	bubble.FontFace = Ui.THEME.boldFont
-	bubble.TextSize = 16
+	bubble.TextSize = 20
 	bubble.TextWrapped = true
 	bubble.TextXAlignment = Enum.TextXAlignment.Left
 	bubble.AutoButtonColor = false
@@ -44,10 +46,10 @@ local function makeBubble(parent: Instance, onTap: () -> ()): TextButton
 	corner.CornerRadius = UDim.new(0, 14)
 	corner.Parent = bubble
 	local padding = Instance.new("UIPadding")
-	padding.PaddingTop = UDim.new(0, 10)
-	padding.PaddingBottom = UDim.new(0, 10)
-	padding.PaddingLeft = UDim.new(0, 14)
-	padding.PaddingRight = UDim.new(0, 14)
+	padding.PaddingTop = UDim.new(0, 12)
+	padding.PaddingBottom = UDim.new(0, 12)
+	padding.PaddingLeft = UDim.new(0, 18)
+	padding.PaddingRight = UDim.new(0, 18)
 	padding.Parent = bubble
 	bubble.Activated:Connect(function()
 		onTap()
@@ -78,12 +80,14 @@ local function say(line: Lines.Line, lasting: boolean?)
 	saying += 1
 	local mine = saying
 	shown.portrait.Image = Catalog.mai.portraits[line.mood]
+	shown.portrait.ImageTransparency = 0
 	shown.bubble.Text = line.text
 	shown.bubble.Visible = true
 	if not lasting then
 		task.delay(LINE_SECONDS, function()
 			if saying == mine then
 				shown.bubble.Visible = false
+				shown.portrait.ImageTransparency = QUIET_TRANSPARENCY
 			end
 		end)
 	end
