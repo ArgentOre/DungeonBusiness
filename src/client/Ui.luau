@@ -168,6 +168,18 @@ local function setEnabled(btn: TextButton, enabled: boolean)
 	end
 end
 
+-- A secondary button that marks where you are (an open tab): a light chip, not pink, since
+-- pressing it does nothing, and not grey, which reads as broken
+local function setSelected(btn: TextButton, selected: boolean)
+	btn.AutoButtonColor = not selected
+	btn.BackgroundColor3 = if selected then THEME.text else THEME.panel
+	btn.TextColor3 = if selected then THEME.onAccent else THEME.accent
+	local stroke = btn:FindFirstChildOfClass("UIStroke")
+	if stroke then
+		stroke.Color = if selected then THEME.text else THEME.accent
+	end
+end
+
 local function setBar(track: Frame, fraction: number, color: Color3)
 	local fill = track:FindFirstChildOfClass("Frame")
 	if fill then
@@ -195,6 +207,7 @@ return {
 	primaryButton = primaryButton,
 	secondaryButton = secondaryButton,
 	setEnabled = setEnabled,
+	setSelected = setSelected,
 	setBar = setBar,
 	clear = clear,
 }
