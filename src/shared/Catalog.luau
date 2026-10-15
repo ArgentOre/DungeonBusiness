@@ -24,6 +24,16 @@ local mobs: { [Types.MobKind]: Types.MobStats } = {
 	BoneLord = { displayName = "Sir Rattleford", maxHp = 120, damage = 10, wage = 8, hireCost = nil },
 }
 
+-- Jordan's portraits of Mai, uploaded to the Gruck Games group (2026-10-14). The source PNGs
+-- belong in assets/ui/mai/; a new version is a new upload and a new id here
+local maiPortraits: { [Types.Mood]: string } = {
+	Relaxed = "rbxassetid://137867739359241",
+	Alert = "rbxassetid://79327626618736",
+	Worried = "rbxassetid://77815834175927",
+	Pleased = "rbxassetid://121550731851079",
+	Sheepish = "rbxassetid://81407250250117",
+}
+
 local starterLayout: { Types.StarterSegment } = {
 	{ kind = "TrapRoom", mobs = {} },
 	{ kind = "Crypt", mobs = { "Skeleton", "Skeleton" } },
@@ -34,6 +44,9 @@ return deepFreeze({
 	rooms = rooms,
 	mobs = mobs,
 	starterLayout = starterLayout,
+	mai = {
+		portraits = maiPortraits,
+	},
 	party = {
 		-- Every party starts from the same base, so hiring makes the dungeon stronger
 		-- instead of drawing stronger parties. Treasure (strength) and a little luck move it.

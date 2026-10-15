@@ -74,6 +74,9 @@ export type Rank = {
 -- The one thing that best explains a raid (nil for a plain win: nothing to explain)
 export type RaidCause = "WornRooms" | "Rookies" | "Fame" | "TooTough"
 
+-- Mai's moods: each has its own portrait and line tone
+export type Mood = "Relaxed" | "Alert" | "Worried" | "Pleased" | "Sheepish"
+
 -- What's coming against what the dungeon holds, compared as ranks
 export type Verdict = "Safe" | "Close" | "Danger"
 
