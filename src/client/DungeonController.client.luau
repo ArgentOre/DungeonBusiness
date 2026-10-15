@@ -50,11 +50,11 @@ local bronzePanel = Ui.panel(screen, 200, 8)
 bronzePanel.Position = UDim2.fromOffset(EDGE, EDGE)
 local bronzeLabel = Ui.text(bronzePanel, "… bronze", Ui.STYLES.money)
 
--- Top right: the door sign, the one main action. Mai says what the doors mean
+-- Top right: the door sign, hanging from the top edge. Mai says what the doors mean
 local signHolder = Ui.group(screen, 0)
 signHolder.AnchorPoint = Vector2.new(1, 0)
-signHolder.Position = UDim2.new(1, -EDGE, 0, EDGE)
-signHolder.Size = UDim2.fromOffset(200, 0)
+signHolder.Position = UDim2.new(1, -EDGE, 0, 0)
+signHolder.Size = UDim2.fromOffset(160, 0)
 DoorSign.create(signHolder, function(open: boolean)
 	SetDoorsOpen:FireServer(open)
 	Mai.say(Lines.doors(open, nextVariant()), not open)
