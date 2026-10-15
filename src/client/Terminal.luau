@@ -64,7 +64,7 @@ local function selectTab(tab: Tab)
 	end
 	for _, each: Tab in TABS do
 		shown.pages[each].Visible = each == tab
-		Ui.setEnabled(shown.tabs[each], each ~= tab) -- the open tab is grey: nothing to press
+		Ui.setSelected(shown.tabs[each], each == tab)
 	end
 end
 

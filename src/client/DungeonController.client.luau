@@ -110,11 +110,13 @@ Mai.create(frontDesk, function()
 	Mai.say(Lines.ledgerHint(nextVariant()))
 end)
 
--- Ranks, not powers: an exact comparison would tell who wins before the raid is told
+-- Ranks, not powers: an exact comparison would tell who wins before the raid is told.
+-- The dungeon's rank is what it holds fixed up: it moves when you build or hire, not with
+-- every scuff. Wear shows in the rooms, and in the ledger's "as it stands"
 local function renderOutlook(outlook: Types.Outlook)
-	holdsLabel.Text = `Your dungeon: Rank {Rules.rankOf(outlook.holds).letter}`
+	holdsLabel.Text = `Your dungeon: Rank {Rules.rankOf(outlook.holdsFixed).letter}`
 	comingLabel.Text = `Coming: Rank {Rules.rankOf(outlook.coming).letter}`
-	local danger = Rules.verdict(outlook.coming, outlook.holds) == "Danger"
+	local danger = Rules.verdict(outlook.coming, outlook.holdsFixed) == "Danger"
 	comingLabel.TextColor3 = if danger then Ui.THEME.needsFix else Ui.THEME.text
 end
 
