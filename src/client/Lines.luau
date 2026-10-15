@@ -84,6 +84,12 @@ local DOORS_OPEN = table.freeze({
 	"Open! Places, everyone.",
 })
 
+local LEDGER_HINTS = table.freeze({
+	"The full story's in the ledger, at the front desk in the hub.",
+	"Every raid's in the ledger. It's on the desk in the hub.",
+	"Paperwork's at the hub desk. All of it. Every line.",
+})
+
 local function pick(list: { string }, variant: number): string
 	return list[(variant - 1) % #list + 1]
 end
@@ -114,6 +120,11 @@ local function doors(open: boolean, variant: number): Line
 		else { text = pick(DOORS_CLOSED, variant), mood = "Relaxed" }
 end
 
+-- When she's tapped: the details aren't hers to read out, they're in the ledger
+local function ledgerHint(variant: number): Line
+	return { text = pick(LEDGER_HINTS, variant), mood = "Relaxed" }
+end
+
 -- Every line, filled in, for checking length and tone in one place
 local function everyLine(): { string }
 	local all: { string } = {}
@@ -128,7 +139,7 @@ local function everyLine(): { string }
 	for _, cause: Types.RaidCause in { "WornRooms", "Rookies", "Fame", "TooTough" } :: { Types.RaidCause } do
 		add(ESCAPES[cause])
 	end
-	for _, list in { ROOKIES_ARRIVE, HELD, HELD_ROOKIES, DOORS_CLOSED, DOORS_OPEN } do
+	for _, list in { ROOKIES_ARRIVE, HELD, HELD_ROOKIES, DOORS_CLOSED, DOORS_OPEN, LEDGER_HINTS } do
 		add(list)
 	end
 	return all
@@ -138,5 +149,6 @@ return {
 	arrival = arrival,
 	result = result,
 	doors = doors,
+	ledgerHint = ledgerHint,
 	everyLine = everyLine,
 }

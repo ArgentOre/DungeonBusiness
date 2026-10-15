@@ -12,14 +12,12 @@ local Catalog = require(Shared:WaitForChild("Catalog"))
 local Ui = require(script.Parent:WaitForChild("Ui"))
 
 local BuyMob = Remotes:WaitForChild("BuyMob") :: RemoteEvent
-local SellSpoils = Remotes:WaitForChild("SellSpoils") :: RemoteEvent
 local StockSpoils = Remotes:WaitForChild("StockSpoils") :: RemoteEvent
 
 type Treasure = {
 	label: TextLabel,
 	bar: Frame,
 	spoils: TextLabel,
-	sell: TextButton,
 	stock: TextButton,
 }
 
@@ -64,13 +62,6 @@ local function onHireClicked(slot: number, kind: Types.MobKind)
 	end
 end
 
-local function onSellClicked()
-	local state = latest
-	if state and state.spoils > 0 then
-		SellSpoils:FireServer(state.spoils)
-	end
-end
-
 local function onStockClicked()
 	local state = latest
 	local amount = if state then Rules.stockable(state) else 0
@@ -85,7 +76,6 @@ local function makeTreasure(frame: Frame): Treasure
 		bar = Ui.bar(frame, 1, Ui.THEME.bronze),
 		spoils = Ui.text(frame, "", Ui.STYLES.body),
 		stock = Ui.secondaryButton(frame, "", onStockClicked),
-		sell = Ui.secondaryButton(frame, "", onSellClicked),
 	}
 end
 
@@ -130,25 +120,16 @@ local function stockButtonText(state: Types.PlayerState, amount: number): string
 	return if amount > 0 then `Stock {amount} in the chest` else "Stock (no spoils yet)"
 end
 
-local function sellButtonText(state: Types.PlayerState): string
-	if state.spoils <= 0 then
-		return "Sell (no spoils yet)"
-	end
-	return `Sell {state.spoils} · +{state.spoils * Catalog.economy.bronzePerSpoil} bronze`
-end
-
 local function updateTreasure(treasure: Treasure, state: Types.PlayerState)
 	local max = Catalog.economy.treasureMax
 	local empty = Rules.chestEmpty(state)
 	treasure.label.Text = if empty then "Empty chest: only rookies come" else `Treasure {state.treasure}/{max}`
 	treasure.label.TextColor3 = if empty then Ui.THEME.needsFix else Ui.THEME.bronze
 	Ui.setBar(treasure.bar, state.treasure / max, Ui.THEME.bronze)
-	treasure.spoils.Text = `Spoils: {state.spoils}`
+	treasure.spoils.Text = if state.spoils > 0 then `Spoils: {state.spoils} (sell them at the hub desk)` else "Spoils: 0"
 	local stockable = Rules.stockable(state)
 	treasure.stock.Text = stockButtonText(state, stockable)
 	Ui.setEnabled(treasure.stock, stockable > 0)
-	treasure.sell.Text = sellButtonText(state)
-	Ui.setEnabled(treasure.sell, state.spoils > 0)
 end
 
 local function updateRow(row: Row, state: Types.PlayerState, slot: number)

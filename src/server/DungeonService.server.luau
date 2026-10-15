@@ -18,6 +18,7 @@ local Spoils = require(Logic.Spoils)
 local Hire = require(Logic.Hire)
 local Outlook = require(Logic.Outlook)
 local PlotService = require(script.Parent.PlotService)
+local HubDesk = require(script.Parent.HubDesk)
 
 local states: { [Player]: Types.PlayerState } = {}
 local lastRaidAt: { [Player]: number } = {}
@@ -151,6 +152,8 @@ local function onBuyMob(player: Player, slot: unknown, name: unknown)
 	end
 	setState(player, Hire.apply(state, slot, kind))
 end
+
+HubDesk.addTerminalPrompts(workspace:WaitForChild("World"):WaitForChild("Hub"))
 
 Players.PlayerAdded:Connect(onPlayerAdded)
 Players.PlayerRemoving:Connect(onPlayerRemoving)
