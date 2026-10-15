@@ -132,6 +132,7 @@ local function makeBody(frame: Frame): ScrollingFrame
 	body.CanvasSize = UDim2.fromOffset(0, 0)
 	body.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	body.ScrollBarThickness = 6
+	body.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar -- rows stop at the bar, not under it
 	body.LayoutOrder = #frame:GetChildren()
 	body.Parent = frame
 	return body
