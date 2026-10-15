@@ -198,6 +198,7 @@ local function build(dungeon: Types.Dungeon, origin: CFrame): Model
 	for slot, segment in dungeon.segments do
 		local room = cloneRoom(segment.kind)
 		room.Name = roomName(slot, segment.kind)
+		room:SetAttribute("Slot", slot) -- the client names the room you're standing in from it
 		dressGameplay(findGameplay(room), findFloor(room), room.Name, segment, slot)
 		room:PivotTo(origin * CFrame.new(roomCenterX(slot), -0.5, roomCenterZ))
 		room.Parent = model

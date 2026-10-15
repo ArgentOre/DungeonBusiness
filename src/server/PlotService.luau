@@ -62,6 +62,7 @@ local function rebuild(player: Player, plot: Plot, dungeon: Types.Dungeon)
 	local oldModel = plot.model
 	local model = DungeonBuilder.build(dungeon, plotOrigin(plot.index))
 	model.Name = `{player.Name}'s Dungeon`
+	model:SetAttribute("OwnerUserId", player.UserId) -- how a client finds its own dungeon
 	model.Parent = workspace
 	plot.model = model
 	-- Destroy the old dungeon only after the new one is in place, so a player
