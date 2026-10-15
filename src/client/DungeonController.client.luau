@@ -1,6 +1,6 @@
 --!strict
--- The HUD (bronze, the doors, Mai at the front desk, the dungeon's rooms) and the terminal
--- at the hub desk, wired to the server.
+-- The HUD (bronze, the door sign, Mai at the front desk, the room you're in, worn rooms,
+-- the room panel) and the terminal at the hub desk, wired to the server.
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,11 +10,13 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Types = require(Shared:WaitForChild("Types"))
 local Catalog = require(Shared:WaitForChild("Catalog"))
-local Rules = require(Shared:WaitForChild("Rules"))
 local Ui = require(script.Parent:WaitForChild("Ui"))
 local RoomPanel = require(script.Parent:WaitForChild("RoomPanel"))
 local Lines = require(script.Parent:WaitForChild("Lines"))
 local Mai = require(script.Parent:WaitForChild("Mai"))
+local DoorSign = require(script.Parent:WaitForChild("DoorSign"))
+local WornTags = require(script.Parent:WaitForChild("WornTags"))
+local RoomAt = require(script.Parent:WaitForChild("RoomAt"))
 local RaidLog = require(script.Parent:WaitForChild("RaidLog"))
 local Terminal = require(script.Parent:WaitForChild("Terminal"))
 
@@ -35,35 +37,42 @@ screen.IgnoreGuiInset = false
 screen.Parent = playerGui
 
 local currentOutlook: Types.Outlook? = nil
-local doorsAreOpen = false
 local lineCount = 0 -- moves through each moment's lines, so the same line doesn't come twice in a row
 
 local function nextVariant(): number
 	lineCount += 1
 	return lineCount
 end
-local lastPartyAt: number? = nil -- os.clock() time the last party came; the countdown is an estimate, the server decides
+local currentState: Types.PlayerState? = nil -- names the room you're standing in
 
 -- Top left: bronze, and the toggle that hides the big panels
 local bronzePanel = Ui.panel(screen, 200, 8)
 bronzePanel.Position = UDim2.fromOffset(EDGE, EDGE)
 local bronzeLabel = Ui.text(bronzePanel, "… bronze", Ui.STYLES.money)
-local holdsLabel = Ui.text(bronzePanel, "", Ui.STYLES.label)
-local comingLabel = Ui.text(bronzePanel, "", Ui.STYLES.label)
 
--- Top right: the one main action, and when the next party is due
-local raidColumn = Ui.group(screen, 6)
-raidColumn.AnchorPoint = Vector2.new(1, 0)
-raidColumn.Position = UDim2.new(1, -EDGE, 0, EDGE)
-raidColumn.Size = UDim2.fromOffset(240, 0)
-local doorsButton: TextButton
-doorsButton = Ui.primaryButton(raidColumn, "Open the doors", function()
-	doorsAreOpen = not doorsAreOpen
-	doorsButton.Text = if doorsAreOpen then "Close the doors" else "Open the doors"
-	SetDoorsOpen:FireServer(doorsAreOpen)
-	Mai.say(Lines.doors(doorsAreOpen, nextVariant()), not doorsAreOpen)
+-- Top right: the door sign, the one main action. Mai says what the doors mean
+local signHolder = Ui.group(screen, 0)
+signHolder.AnchorPoint = Vector2.new(1, 0)
+signHolder.Position = UDim2.new(1, -EDGE, 0, EDGE)
+signHolder.Size = UDim2.fromOffset(200, 0)
+DoorSign.create(signHolder, function(open: boolean)
+	SetDoorsOpen:FireServer(open)
+	Mai.say(Lines.doors(open, nextVariant()), not open)
 end)
-local doorsStatus = Ui.text(raidColumn, "Doors closed", Ui.STYLES.muted)
+
+-- Top centre: the room you're standing in, only while you're in one
+local nameplate = Ui.text(screen, "", Ui.STYLES.heading)
+nameplate.AnchorPoint = Vector2.new(0.5, 0)
+nameplate.Position = UDim2.new(0.5, 0, 0, EDGE)
+nameplate.Size = UDim2.fromOffset(400, 0)
+nameplate.TextXAlignment = Enum.TextXAlignment.Center
+nameplate.Visible = false
+
+-- Bottom right: a tag per worn room, with its fix cost
+local wornTags = Ui.group(screen, 4)
+wornTags.AnchorPoint = Vector2.new(1, 1)
+wornTags.Position = UDim2.new(1, -EDGE, 1, -EDGE)
+wornTags.Size = UDim2.fromOffset(320, 0)
 
 -- Bottom left: the rooms
 local dungeonPanel = Ui.panel(screen, 340, 12)
@@ -110,37 +119,30 @@ Mai.create(frontDesk, function()
 	Mai.say(Lines.ledgerHint(nextVariant()))
 end)
 
--- Ranks, not powers: an exact comparison would tell who wins before the raid is told.
--- The dungeon's rank is what it holds fixed up: it moves when you build or hire, not with
--- every scuff. Wear shows in the rooms, and in the ledger's "as it stands"
-local function renderOutlook(outlook: Types.Outlook)
-	holdsLabel.Text = `Your dungeon: Rank {Rules.rankOf(outlook.holdsFixed).letter}`
-	comingLabel.Text = `Coming: Rank {Rules.rankOf(outlook.coming).letter}`
-	local danger = Rules.verdict(outlook.coming, outlook.holdsFixed) == "Danger"
-	comingLabel.TextColor3 = if danger then Ui.THEME.needsFix else Ui.THEME.text
-end
-
 local function render(state: Types.PlayerState, outlook: Types.Outlook)
+	currentState = state
 	currentOutlook = outlook
 	bronzeLabel.Text = `{state.bronze} bronze`
-	renderOutlook(outlook)
+	WornTags.render(wornTags, state)
 	RoomPanel.render(roomRows, state)
 	Terminal.render(state, outlook)
 end
 
-local function doorsStatusText(): string
-	if not doorsAreOpen then
-		return "Doors closed"
+local function nameplateText(): string?
+	local state, character = currentState, Players.LocalPlayer.Character
+	local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
+	local dungeon = RoomAt.dungeonOf(Players.LocalPlayer.UserId, workspace)
+	if not (state and root and root:IsA("BasePart") and dungeon) then
+		return nil
 	end
-	local now = os.clock()
-	local secondsLeft = math.ceil(Rules.nextPartyAt(lastPartyAt, now) - now)
-	return if secondsLeft > 0 then `Next party in {secondsLeft}s` else "A party is on the way…"
+	local slot = RoomAt.slotAt(dungeon, root.Position)
+	local segment = if slot then state.dungeon.segments[slot] else nil
+	return if segment then Catalog.rooms[segment.kind].displayName else nil
 end
 
 -- Mai announces the party as the telling starts. How it went (her line, the ledger row)
 -- waits until it's told, so the result isn't spoiled
 local function onRaidFinished(events: { Types.RaidEvent }, report: Types.RaidReport)
-	lastPartyAt = os.clock()
 	local outlook = currentOutlook
 	if outlook then
 		Mai.say(Lines.arrival(report, outlook.holds, nextVariant()))
@@ -161,7 +163,9 @@ end
 
 task.spawn(function()
 	while true do
-		doorsStatus.Text = doorsStatusText()
+		local text = nameplateText()
+		nameplate.Visible = text ~= nil
+		nameplate.Text = text or ""
 		task.wait(0.25)
 	end
 end)
