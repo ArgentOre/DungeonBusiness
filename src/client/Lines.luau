@@ -84,6 +84,15 @@ local DOORS_OPEN = table.freeze({
 	"Open! Places, everyone.",
 })
 
+-- Stern, but it says what to do about it
+local REFUSALS = table.freeze({
+	NoBronze = table.freeze({
+		"Not enough bronze for that. Sell some spoils first.",
+		"The repair budget is empty. The hub desk buys spoils.",
+		"We can't afford that. Spoils sell at the hub desk.",
+	}),
+} :: { [Types.Refusal]: { string } })
+
 local LEDGER_HINTS = table.freeze({
 	"The full story's in the ledger, at the front desk in the hub.",
 	"Every raid's in the ledger. It's on the desk in the hub.",
@@ -120,6 +129,11 @@ local function doors(open: boolean, variant: number): Line
 		else { text = pick(DOORS_CLOSED, variant), mood = "Relaxed" }
 end
 
+-- When the server turns something down: why, and what to do instead
+local function refusal(reason: Types.Refusal, variant: number): Line
+	return { text = pick(REFUSALS[reason], variant), mood = "Alert" }
+end
+
 -- When she's tapped: the details aren't hers to read out, they're in the ledger
 local function ledgerHint(variant: number): Line
 	return { text = pick(LEDGER_HINTS, variant), mood = "Relaxed" }
@@ -139,6 +153,9 @@ local function everyLine(): { string }
 	for _, cause: Types.RaidCause in { "WornRooms", "Rookies", "Fame", "TooTough" } :: { Types.RaidCause } do
 		add(ESCAPES[cause])
 	end
+	for _, reason: Types.Refusal in { "NoBronze" } :: { Types.Refusal } do
+		add(REFUSALS[reason])
+	end
 	for _, list in { ROOKIES_ARRIVE, HELD, HELD_ROOKIES, DOORS_CLOSED, DOORS_OPEN, LEDGER_HINTS } do
 		add(list)
 	end
@@ -150,5 +167,6 @@ return {
 	result = result,
 	doors = doors,
 	ledgerHint = ledgerHint,
+	refusal = refusal,
 	everyLine = everyLine,
 }

@@ -80,6 +80,9 @@ export type Mood = "Relaxed" | "Alert" | "Worried" | "Pleased" | "Sheepish"
 -- What's coming against what the dungeon holds, compared as ranks
 export type Verdict = "Safe" | "Close" | "Danger"
 
+-- Why the server turned down something the player tried; Mai puts it in words
+export type Refusal = "NoBronze"
+
 -- What the administrator can see coming, as powers; the client shows them as ranks
 export type Outlook = {
 	holds: number, -- the strongest party the dungeon stops as it stands

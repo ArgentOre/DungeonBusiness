@@ -31,6 +31,16 @@ local function affordableRepair(state: Types.PlayerState, slot: number): number
 	return math.min(100 - segment.condition, state.bronze // repairCost(segment, 1))
 end
 
+-- A worn room the player can't afford a single point of: the fix prompt is refused, and
+-- the player hears why instead of nothing happening
+local function fixRefusal(state: Types.PlayerState, slot: number): Types.Refusal?
+	local segment = state.dungeon.segments[slot]
+	if segment and segment.condition < 100 and affordableRepair(state, slot) == 0 then
+		return "NoBronze"
+	end
+	return nil
+end
+
 local function hasFreeSlot(segment: Types.Segment): boolean
 	return #segment.mobs < Catalog.rooms[segment.kind].mobSlots
 end
@@ -155,6 +165,7 @@ return {
 	repairCost = repairCost,
 	canRepair = canRepair,
 	affordableRepair = affordableRepair,
+	fixRefusal = fixRefusal,
 	hasFreeSlot = hasFreeSlot,
 	canBuyMob = canBuyMob,
 }

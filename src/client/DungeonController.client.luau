@@ -26,6 +26,7 @@ local SellSpoils = Remotes:WaitForChild("SellSpoils") :: RemoteEvent
 local StateChanged = Remotes:WaitForChild("StateChanged") :: RemoteEvent
 local RaidFinished = Remotes:WaitForChild("RaidFinished") :: RemoteEvent
 local DebugTravel = Remotes:WaitForChild("DebugTravel") :: RemoteEvent
+local Refused = Remotes:WaitForChild("Refused") :: RemoteEvent
 
 local EDGE = 16 -- gap between the HUD and the screen edge
 local TELLING_SHARE = 0.75 -- a raid is told over most of the gap before the next party, leaving a breath
@@ -155,6 +156,9 @@ end
 
 StateChanged.OnClientEvent:Connect(render)
 RaidFinished.OnClientEvent:Connect(onRaidFinished)
+Refused.OnClientEvent:Connect(function(reason: Types.Refusal)
+	Mai.say(Lines.refusal(reason, nextVariant()))
+end)
 
 local initialState, initialOutlook = GetState:InvokeServer()
 if initialState and initialOutlook then

@@ -99,6 +99,11 @@ local function onPromptTriggered(prompt: ProximityPrompt, player: Player)
 	if typeof(slot) ~= "number" or not state or not PlotService.owns(player, prompt) then
 		return
 	end
+	local refusal = Rules.fixRefusal(state, slot)
+	if refusal then
+		Remotes.Refused:FireClient(player, refusal)
+		return
+	end
 	tryRepair(player, slot, Rules.affordableRepair(state, slot))
 end
 
