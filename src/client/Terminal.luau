@@ -166,7 +166,7 @@ local function create(parent: Instance, onSell: (amount: number) -> ()): Parts
 	Ui.text(overview, "Latest raid", Ui.STYLES.label)
 	local latest = Ui.group(overview, 2)
 	Ui.text(overview, "Visitors", Ui.STYLES.label)
-	local visitors = Ui.group(overview, 6)
+	local visitors = Ui.group(overview, 0)
 	local detail = Ui.group(ledger, 12)
 	detail.Visible = false
 
@@ -225,7 +225,7 @@ local function addRaid(report: Types.RaidReport, events: { Types.RaidEvent })
 		return
 	end
 	visitorCount += 1
-	local row = Ui.secondaryButton(shown.visitors, visitorText(report), function()
+	local row = Ui.listRow(shown.visitors, visitorText(report), function()
 		showDetail(report, events)
 	end)
 	row.LayoutOrder = -visitorCount

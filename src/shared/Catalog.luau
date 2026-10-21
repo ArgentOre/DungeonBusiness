@@ -69,13 +69,14 @@ return deepFreeze({
 		-- Ranks, weakest first. Read from power for players to compare; they change no odds.
 		-- Bands from play data (probes/rank_data.luau, 2026-10-13): most parties are C
 		-- Each rank has its own named parties, so a name never shows up at the wrong rank.
-		-- Placeholder names (2026-10-21); persistent parties that grow come with saving
+		-- New parties pick names to sound cool; old hands kept the plain ones they started
+		-- with (Brian). Placeholders (2026-10-21); persistent parties that grow come with saving
 		ranks = {
-			{ letter = "E", minPower = 0, parties = { "The Mudboots", "The Puddle Jumpers", "The Lost Socks" } }, -- rookies
-			{ letter = "D", minPower = 25, parties = { "The Copper Kettles", "The Lantern Club", "The Second Breakfasts" } },
+			{ letter = "E", minPower = 0, parties = { "The Thunder Wolves", "The Shadow Blades", "The Doom Riders" } }, -- rookies
+			{ letter = "D", minPower = 25, parties = { "The Storm Eagles", "The Flame Knights", "The Iron Fangs" } },
 			{ letter = "C", minPower = 35, parties = { "The Iron Spoons", "The Badger Brigade", "The Night Owls" } },
-			{ letter = "B", minPower = 45, parties = { "The Silver Shields", "The Stormcallers", "The Golden Geese" } },
-			{ letter = "A", minPower = 55, parties = { "The Crown Breakers", "The High Banners", "The Starforged" } },
+			{ letter = "B", minPower = 45, parties = { "The Old Company", "The Lantern Club", "The Copper Kettles" } },
+			{ letter = "A", minPower = 55, parties = { "The Party", "The Regulars", "Dave's Lot" } },
 		},
 		rookieGearValue = 0.5,
 	},

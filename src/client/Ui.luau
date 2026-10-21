@@ -158,6 +158,41 @@ local function secondaryButton(parent: Instance, content: string, onClick: () ->
 	return btn
 end
 
+-- A line in a list you can tap, like a row in a ledger: text on the left, a pink chevron
+-- on the right (the only pink, since that's the part that says "tap me"), a rule underneath
+local function listRow(parent: Instance, content: string, onClick: () -> ()): TextButton
+	local row = Instance.new("TextButton")
+	row.Size = UDim2.new(1, 0, 0, 40)
+	row.BackgroundTransparency = 1
+	row.AutoButtonColor = false
+	row.FontFace = THEME.bodyFont
+	row.TextSize = 18
+	row.TextColor3 = THEME.text
+	row.TextXAlignment = Enum.TextXAlignment.Left
+	row.Text = content
+	row.LayoutOrder = nextOrder(parent)
+	local chevron = Instance.new("TextLabel")
+	chevron.Size = UDim2.new(0, 20, 1, 0)
+	chevron.Position = UDim2.new(1, -20, 0, 0)
+	chevron.BackgroundTransparency = 1
+	chevron.FontFace = THEME.boldFont
+	chevron.TextSize = 22
+	chevron.TextColor3 = THEME.accent
+	chevron.Text = "›"
+	chevron.Parent = row
+	local rule = Instance.new("Frame")
+	rule.Size = UDim2.new(1, 0, 0, 1)
+	rule.Position = UDim2.new(0, 0, 1, -1)
+	rule.BackgroundColor3 = THEME.panelBorder
+	rule.BorderSizePixel = 0
+	rule.Parent = row
+	row.Activated:Connect(function()
+		onClick()
+	end)
+	row.Parent = parent
+	return row
+end
+
 -- A secondary button is pink when it can be used and grey when it can't
 local function setEnabled(btn: TextButton, enabled: boolean)
 	btn.AutoButtonColor = enabled
@@ -206,6 +241,7 @@ return {
 	bar = bar,
 	primaryButton = primaryButton,
 	secondaryButton = secondaryButton,
+	listRow = listRow,
 	setEnabled = setEnabled,
 	setSelected = setSelected,
 	setBar = setBar,
