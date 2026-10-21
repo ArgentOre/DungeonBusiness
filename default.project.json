@@ -16,7 +16,8 @@
         "BuyMob": { "$className": "RemoteEvent" },
         "StateChanged": { "$className": "RemoteEvent" },
         "RaidFinished": { "$className": "RemoteEvent" },
-        "DebugTravel": { "$className": "RemoteEvent" }
+        "DebugTravel": { "$className": "RemoteEvent" },
+        "Refused": { "$className": "RemoteEvent" }
       }
     },
 
