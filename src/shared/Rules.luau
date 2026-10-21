@@ -93,6 +93,13 @@ local function rankOf(power: number): Types.Rank
 	return found
 end
 
+-- Which party this is, read from its strength like its rank: the same strength is always the
+-- same party, and nothing random is drawn, so raids play exactly as before
+local function partyName(power: number): string
+	local parties = rankOf(power).parties
+	return parties[math.floor(power) % #parties + 1]
+end
+
 -- Compared as ranks, never powers: an exact comparison would tell who wins before the raid is told
 local function verdict(partyPower: number, holds: number): Types.Verdict
 	local party, dungeon = rankOf(partyPower).minPower, rankOf(holds).minPower
@@ -156,6 +163,7 @@ return {
 	chestEmpty = chestEmpty,
 	nextPartyAt = nextPartyAt,
 	rankOf = rankOf,
+	partyName = partyName,
 	verdict = verdict,
 	raidCause = raidCause,
 	lure = lure,

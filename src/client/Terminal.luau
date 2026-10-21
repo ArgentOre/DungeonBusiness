@@ -50,7 +50,7 @@ local function standingText(outlook: Types.Outlook): string
 end
 
 local function visitorText(report: Types.RaidReport): string
-	local rank = `Rank {Rules.rankOf(report.partyPower).letter}`
+	local rank = `{Rules.partyName(report.partyPower)} · Rank {Rules.rankOf(report.partyPower).letter}`
 	if report.won then
 		return `{rank} · held · +{report.spoilsDropped} spoils`
 	end

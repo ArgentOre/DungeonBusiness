@@ -6,35 +6,37 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Types = require(Shared:WaitForChild("Types"))
 local Rules = require(Shared:WaitForChild("Rules"))
+local Catalog = require(Shared:WaitForChild("Catalog"))
 
 export type Mood = Types.Mood
 export type Line = { text: string, mood: Mood }
 
--- "%s" is the party's rank letter
+-- The first "%s" is the party's name, the second its rank letter
 local ARRIVALS = table.freeze({
 	Safe = table.freeze({
-		"Rank %s party at the door. We've got this.",
-		"Rank %s, coming in. Nothing we can't handle.",
-		"Visitors. Rank %s. I'll put the kettle on.",
+		"%s, Rank %s, at the door. We've got this.",
+		"%s are here. Rank %s. Nothing we can't handle.",
+		"Visitors: %s, Rank %s. I'll put the kettle on.",
 	}),
 	Close = table.freeze({
-		"Rank %s party. Could go either way.",
-		"Rank %s at the door. Look sharp, everyone.",
-		"Rank %s. This one's a fair fight.",
+		"%s, Rank %s. Could go either way.",
+		"%s at the door, Rank %s. Look sharp, everyone.",
+		"%s, Rank %s. This one's a fair fight.",
 	}),
 	Danger = table.freeze({
-		"Rank %s. That's… above our pay grade.",
-		"Rank %s at the door. Is it too late to close?",
-		"Rank %s. Everyone, please act natural.",
+		"%s, Rank %s. That's… above our pay grade.",
+		"%s at the door, Rank %s. Too late to close?",
+		"%s, Rank %s. Everyone, please act natural.",
 	}),
 } :: { [Types.Verdict]: { string } })
 
 local ARRIVAL_MOODS = table.freeze({ Safe = "Relaxed", Close = "Alert", Danger = "Worried" } :: { [Types.Verdict]: Mood })
 
+-- "%s" is the party's name
 local ROOKIES_ARRIVE = table.freeze({
-	"Rookies. Be gentle.",
-	"Rookies at the door. Their map is upside down.",
-	"Rookies. An empty chest is all they've heard about.",
+	"%s. Rookies. Be gentle.",
+	"Rookies at the door: %s. Their map is upside down.",
+	"%s, rookies. They heard the chest was empty.",
 })
 
 local HELD = table.freeze({
@@ -105,12 +107,13 @@ end
 
 -- As a party arrives: its rank against what the dungeon holds
 local function arrival(report: Types.RaidReport, holds: number, variant: number): Line
+	local name = Rules.partyName(report.partyPower)
 	if report.rookies then
-		return { text = pick(ROOKIES_ARRIVE, variant), mood = "Relaxed" }
+		return { text = string.format(pick(ROOKIES_ARRIVE, variant), name), mood = "Relaxed" }
 	end
 	local verdict: Types.Verdict = Rules.verdict(report.partyPower, holds)
 	local letter = Rules.rankOf(report.partyPower).letter
-	return { text = string.format(pick(ARRIVALS[verdict], variant), letter), mood = ARRIVAL_MOODS[verdict] }
+	return { text = string.format(pick(ARRIVALS[verdict], variant), name, letter), mood = ARRIVAL_MOODS[verdict] }
 end
 
 -- Once the raid has been told: how it went, and why
@@ -139,12 +142,26 @@ local function ledgerHint(variant: number): Line
 	return { text = pick(LEDGER_HINTS, variant), mood = "Relaxed" }
 end
 
--- Every line, filled in, for checking length and tone in one place
+local function longestPartyName(): string
+	local longest = ""
+	for _, rank in Catalog.party.ranks do
+		for _, name in rank.parties do
+			if #name > #longest then
+				longest = name
+			end
+		end
+	end
+	return longest
+end
+
+-- Every line, filled in with the longest party name, for checking length and tone in one place
 local function everyLine(): { string }
 	local all: { string } = {}
+	local name = longestPartyName()
 	local function add(list: { string })
 		for _, text in list do
-			table.insert(all, (string.gsub(text, "%%s", "C")))
+			local withName = string.gsub(text, "%%s", name, 1)
+			table.insert(all, (string.gsub(withName, "%%s", "C")))
 		end
 	end
 	for _, verdict: Types.Verdict in { "Safe", "Close", "Danger" } :: { Types.Verdict } do
