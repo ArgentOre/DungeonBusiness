@@ -17,6 +17,7 @@ local MAX_SIZE = Vector2.new(680, 600) -- fills a phone, but not a monitor
 local HEADER_HEIGHT = 44
 local GAP = 10
 local OUTLINE_ROOM = 3 -- wider than any button outline
+local SCROLL_BAR = 6
 
 export type Tab = "Ledger" | "Sell"
 local TABS: { Tab } = { "Ledger", "Sell" }
@@ -132,13 +133,14 @@ local function makeBody(frame: Frame): ScrollingFrame
 	body.BorderSizePixel = 0
 	body.CanvasSize = UDim2.fromOffset(0, 0)
 	body.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	body.ScrollBarThickness = 6
-	body.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar -- rows stop at the bar, not under it
+	body.ScrollBarThickness = SCROLL_BAR
 	-- A button's outline is drawn just outside it, and a scrolling frame clips at its edge, so
 	-- full-width buttons lost their sides. A little padding gives every outline room
 	local padding = Instance.new("UIPadding")
 	padding.PaddingLeft = UDim.new(0, OUTLINE_ROOM)
-	padding.PaddingRight = UDim.new(0, OUTLINE_ROOM + 4) -- and a gap before the scroll bar
+	-- The right side also keeps the scroll bar's width clear: the bar's inset setting didn't
+	-- keep rows from running under it in play, so the room is made here instead
+	padding.PaddingRight = UDim.new(0, OUTLINE_ROOM + SCROLL_BAR + 4)
 	padding.PaddingTop = UDim.new(0, OUTLINE_ROOM)
 	padding.PaddingBottom = UDim.new(0, OUTLINE_ROOM)
 	padding.Parent = body
