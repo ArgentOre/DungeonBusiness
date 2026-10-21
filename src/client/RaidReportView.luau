@@ -18,10 +18,11 @@ local function rankLetter(report: Types.RaidReport): string
 end
 
 local function headline(report: Types.RaidReport): string
+	local who = `{Rules.partyName(report.partyPower)}, Rank {rankLetter(report)}`
 	if report.won then
-		return `Rank {rankLetter(report)} party defeated!`
+		return `{who}: sent home!`
 	end
-	return if report.treasureTaken > 0 then `They stole {report.treasureTaken} treasure!` else "They got away!"
+	return if report.treasureTaken > 0 then `{who}: stole {report.treasureTaken} treasure!` else `{who}: got away!`
 end
 
 local function whereItEnded(report: Types.RaidReport, state: Types.PlayerState): string

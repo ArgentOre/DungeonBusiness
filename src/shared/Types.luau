@@ -69,6 +69,7 @@ export type RaidReport = {
 export type Rank = {
 	letter: string,
 	minPower: number,
+	parties: { string }, -- the parties of this rank, by name; a name always matches its rank
 }
 
 -- The one thing that best explains a raid (nil for a plain win: nothing to explain)
