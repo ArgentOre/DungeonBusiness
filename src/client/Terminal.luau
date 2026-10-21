@@ -16,6 +16,7 @@ local MAX_VISITORS = 30 -- about ten minutes of raids; older ones drop off the p
 local MAX_SIZE = Vector2.new(680, 600) -- fills a phone, but not a monitor
 local HEADER_HEIGHT = 44
 local GAP = 10
+local OUTLINE_ROOM = 3 -- wider than any button outline
 
 export type Tab = "Ledger" | "Sell"
 local TABS: { Tab } = { "Ledger", "Sell" }
@@ -133,6 +134,14 @@ local function makeBody(frame: Frame): ScrollingFrame
 	body.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	body.ScrollBarThickness = 6
 	body.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar -- rows stop at the bar, not under it
+	-- A button's outline is drawn just outside it, and a scrolling frame clips at its edge, so
+	-- full-width buttons lost their sides. A little padding gives every outline room
+	local padding = Instance.new("UIPadding")
+	padding.PaddingLeft = UDim.new(0, OUTLINE_ROOM)
+	padding.PaddingRight = UDim.new(0, OUTLINE_ROOM + 4) -- and a gap before the scroll bar
+	padding.PaddingTop = UDim.new(0, OUTLINE_ROOM)
+	padding.PaddingBottom = UDim.new(0, OUTLINE_ROOM)
+	padding.Parent = body
 	body.LayoutOrder = #frame:GetChildren()
 	body.Parent = frame
 	return body
