@@ -58,7 +58,7 @@ end
 local function addPayday(parent: Instance, report: Types.RaidReport)
 	local box = Ui.group(parent, 4)
 	Ui.text(box, `Spoils  {signed(report.spoilsDropped)}`, Ui.STYLES.money)
-	Ui.text(box, "Sell them here, or stock them as treasure in the Treasure Room.", Ui.STYLES.muted)
+	Ui.text(box, "Sell them here, or stock them in the vault in the Treasure Room.", Ui.STYLES.muted)
 	Ui.text(box, `Wages  −{report.wagesPaid} bronze`, Ui.STYLES.muted)
 end
 

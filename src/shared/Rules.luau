@@ -146,6 +146,23 @@ local function stockable(state: Types.PlayerState): number
 	return math.min(state.spoils, Catalog.economy.treasureMax - state.treasure)
 end
 
+-- Why the vault turns the player away, or nil when there's something to put in it
+local function stockRefusal(state: Types.PlayerState): Types.Refusal?
+	if state.spoils <= 0 then
+		return "NoSpoils"
+	elseif state.treasure >= Catalog.economy.treasureMax then
+		return "VaultFull"
+	end
+	return nil
+end
+
+-- How many of the vault's coin piles show: pile i once the treasure reaches i out of
+-- `pileCount` of the way to full, so an empty vault shows none and a full one shows all
+local function pilesShown(treasure: number, pileCount: number): number
+	local shown = math.floor(treasure / Catalog.economy.treasureMax * pileCount)
+	return math.clamp(shown, 0, pileCount)
+end
+
 local function canStock(state: Types.PlayerState, amount: number): (boolean, string?)
 	if not isWholeAmount(amount) then
 		return false, "Amount must be a whole number above zero"
@@ -170,6 +187,8 @@ return {
 	canSell = canSell,
 	stockable = stockable,
 	canStock = canStock,
+	stockRefusal = stockRefusal,
+	pilesShown = pilesShown,
 	repairCost = repairCost,
 	canRepair = canRepair,
 	affordableRepair = affordableRepair,

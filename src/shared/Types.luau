@@ -82,7 +82,7 @@ export type Mood = "Relaxed" | "Alert" | "Worried" | "Pleased" | "Sheepish"
 export type Verdict = "Safe" | "Close" | "Danger"
 
 -- Why the server turned down something the player tried; Mai puts it in words
-export type Refusal = "NoBronze"
+export type Refusal = "NoBronze" | "NoSpoils" | "VaultFull"
 
 -- What the administrator can see coming, as powers; the client shows them as ranks
 export type Outlook = {

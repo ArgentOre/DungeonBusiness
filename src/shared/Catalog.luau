@@ -51,6 +51,10 @@ return deepFreeze({
 	terminal = {
 		promptName = "LedgerPrompt",
 	},
+	-- The server puts this prompt on the vault's StockSpot; holding it stocks every spoil that fits
+	vault = {
+		promptName = "StockPrompt",
+	},
 	party = {
 		-- Every party starts from the same base, so hiring makes the dungeon stronger
 		-- instead of drawing stronger parties. Treasure (strength) and a little luck move it.
@@ -76,7 +80,7 @@ return deepFreeze({
 			{ letter = "D", minPower = 25, parties = { "The Storm Eagles", "The Flame Knights", "The Iron Fangs" } },
 			{ letter = "C", minPower = 35, parties = { "The Iron Spoons", "The Badger Brigade", "The Night Owls" } },
 			{ letter = "B", minPower = 45, parties = { "The Old Company", "The Lantern Club", "The Copper Kettles" } },
-			{ letter = "A", minPower = 55, parties = { "The Party", "The Regulars", "Dave's Lot" } },
+			{ letter = "A", minPower = 55, parties = { "The Party", "The Regulars", "Bob's Lot" } },
 		},
 		rookieGearValue = 0.5,
 	},
