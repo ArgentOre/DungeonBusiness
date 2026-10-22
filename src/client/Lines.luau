@@ -93,6 +93,16 @@ local REFUSALS = table.freeze({
 		"The repair budget is empty. The hub desk buys spoils.",
 		"We can't afford that. Spoils sell at the hub desk.",
 	}),
+	NoSpoils = table.freeze({
+		"Nothing to put in the vault yet. Win a raid first.",
+		"The vault wants spoils, and we haven't got any.",
+		"Empty hands. Send a party home and try again.",
+	}),
+	VaultFull = table.freeze({
+		"The vault's full. Sell the rest at the hub desk.",
+		"Not one more coin fits in there. The hub desk buys spoils.",
+		"Full to the bars. Any more goes to the hub desk.",
+	}),
 } :: { [Types.Refusal]: { string } })
 
 local LEDGER_HINTS = table.freeze({
@@ -170,7 +180,7 @@ local function everyLine(): { string }
 	for _, cause: Types.RaidCause in { "WornRooms", "Rookies", "Fame", "TooTough" } :: { Types.RaidCause } do
 		add(ESCAPES[cause])
 	end
-	for _, reason: Types.Refusal in { "NoBronze" } :: { Types.Refusal } do
+	for _, reason: Types.Refusal in { "NoBronze", "NoSpoils", "VaultFull" } :: { Types.Refusal } do
 		add(REFUSALS[reason])
 	end
 	for _, list in { ROOKIES_ARRIVE, HELD, HELD_ROOKIES, DOORS_CLOSED, DOORS_OPEN, LEDGER_HINTS } do

@@ -27,7 +27,7 @@ local rng = Random.new()
 
 local function setState(player: Player, state: Types.PlayerState)
 	states[player] = state
-	PlotService.show(player, state.dungeon)
+	PlotService.show(player, state.dungeon, state.treasure)
 	Remotes.StateChanged:FireClient(player, state, Outlook.of(state))
 end
 
@@ -35,7 +35,7 @@ local function onPlayerAdded(player: Player)
 	local state = StartingState.create()
 	states[player] = state
 	PlotService.claim(player)
-	PlotService.show(player, state.dungeon)
+	PlotService.show(player, state.dungeon, state.treasure)
 end
 
 local function onPlayerRemoving(player: Player)
@@ -93,12 +93,7 @@ local function tryRepair(player: Player, slot: number, points: number)
 	setState(player, Repair.apply(state, slot, points))
 end
 
-local function onPromptTriggered(prompt: ProximityPrompt, player: Player)
-	local slot: unknown = prompt:GetAttribute("RepairSlot")
-	local state = states[player]
-	if typeof(slot) ~= "number" or not state or not PlotService.owns(player, prompt) then
-		return
-	end
+local function onFixPrompt(player: Player, state: Types.PlayerState, slot: number)
 	local refusal = Rules.fixRefusal(state, slot)
 	if refusal then
 		Remotes.Refused:FireClient(player, refusal)
@@ -107,20 +102,39 @@ local function onPromptTriggered(prompt: ProximityPrompt, player: Player)
 	tryRepair(player, slot, Rules.affordableRepair(state, slot))
 end
 
+-- Stocks every spoil that fits; the amount is the server's, not the client's
+local function onStockPrompt(player: Player, state: Types.PlayerState)
+	local refusal = Rules.stockRefusal(state)
+	if refusal then
+		Remotes.Refused:FireClient(player, refusal)
+		return
+	end
+	local amount = Rules.stockable(state)
+	if Rules.canStock(state, amount) then
+		setState(player, Spoils.stock(state, amount))
+	end
+end
+
+-- Prompts in the player's own dungeon: fixing a room, or stocking the vault
+local function onPromptTriggered(prompt: ProximityPrompt, player: Player)
+	local state = states[player]
+	if not state or not PlotService.owns(player, prompt) then
+		return
+	end
+	local slot: unknown = prompt:GetAttribute("RepairSlot")
+	if typeof(slot) == "number" then
+		onFixPrompt(player, state, slot)
+	elseif prompt.Name == Catalog.vault.promptName then
+		onStockPrompt(player, state)
+	end
+end
+
 local function onSellSpoils(player: Player, amount: unknown)
 	local state = states[player]
 	if not state or typeof(amount) ~= "number" or not Rules.canSell(state, amount) then
 		return
 	end
 	setState(player, Spoils.sell(state, amount))
-end
-
-local function onStockSpoils(player: Player, amount: unknown)
-	local state = states[player]
-	if not state or typeof(amount) ~= "number" or not Rules.canStock(state, amount) then
-		return
-	end
-	setState(player, Spoils.stock(state, amount))
 end
 
 -- Admin debug tool, Studio only: until real travel exists (conveyors, Milestone 2), a button
@@ -170,7 +184,6 @@ Remotes.GetState.OnServerInvoke = onGetState
 Remotes.SetDoorsOpen.OnServerEvent:Connect(onSetDoorsOpen)
 Remotes.BuyMob.OnServerEvent:Connect(onBuyMob)
 Remotes.SellSpoils.OnServerEvent:Connect(onSellSpoils)
-Remotes.StockSpoils.OnServerEvent:Connect(onStockSpoils)
 Remotes.DebugTravel.OnServerEvent:Connect(onDebugTravel)
 ProximityPromptService.PromptTriggered:Connect(onPromptTriggered)
 

@@ -72,8 +72,9 @@ local function rebuild(player: Player, plot: Plot, dungeon: Types.Dungeon)
 	end
 end
 
--- Most changes only touch a few rooms, so update in place; a full rebuild makes the world flash
-local function show(player: Player, dungeon: Types.Dungeon)
+-- Most changes only touch a few rooms, so update in place; a full rebuild makes the world flash.
+-- The vault's coin piles follow the treasure
+local function show(player: Player, dungeon: Types.Dungeon, treasure: number)
 	local plot = plots[player]
 	if not plot then
 		return
@@ -83,6 +84,10 @@ local function show(player: Player, dungeon: Types.Dungeon)
 		rebuild(player, plot, dungeon)
 	end
 	plot.shown = dungeon
+	local shownModel = plot.model
+	if shownModel then
+		DungeonBuilder.showTreasure(shownModel, dungeon, treasure)
+	end
 end
 
 local function owns(player: Player, instance: Instance): boolean

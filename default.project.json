@@ -12,7 +12,6 @@
         "GetState": { "$className": "RemoteFunction" },
         "SetDoorsOpen": { "$className": "RemoteEvent" },
         "SellSpoils": { "$className": "RemoteEvent" },
-        "StockSpoils": { "$className": "RemoteEvent" },
         "BuyMob": { "$className": "RemoteEvent" },
         "StateChanged": { "$className": "RemoteEvent" },
         "RaidFinished": { "$className": "RemoteEvent" },

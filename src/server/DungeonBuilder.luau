@@ -15,6 +15,8 @@ local HALLWAY_WIDTH = 20
 local ENTRANCE_LENGTH = 12 -- hallway before the first doorway, where the player arrives
 local FIX_HOLD_SECONDS = 1.5
 local FIX_PROMPT_DISTANCE = 10
+local STOCK_HOLD_SECONDS = 1
+local STOCK_SPOT_OFFSET = CFrame.new(0, 3, 12) -- the placeholder sits clear of the RepairSpot's
 
 local function findFloor(room: Model): BasePart
 	local structure = room:FindFirstChild("Structure")
@@ -139,12 +141,46 @@ local function removeMessIfTidy(gameplay: Model, segment: Types.Segment)
 	end
 end
 
--- Makes a room's Gameplay parts match its segment: trap state, mess, and a fix prompt when worn
+-- The StockSpot is art too: until Jordan adds it, an invisible spot on the floor stands in
+local function findStockSpot(gameplay: Model, floor: BasePart, roomLabel: string): BasePart
+	local spot = gameplay:FindFirstChild("StockSpot")
+	if spot and spot:IsA("BasePart") then
+		return spot
+	end
+	warn(`{roomLabel}: needs a Gameplay.StockSpot part; using a spot on the floor`)
+	local placeholder = Instance.new("Part")
+	placeholder.Name = "StockSpot"
+	placeholder.Anchored = true
+	placeholder.CanCollide = false
+	placeholder.Transparency = 1
+	placeholder.Size = Vector3.new(2, 2, 2)
+	placeholder.CFrame = floor.CFrame * STOCK_SPOT_OFFSET
+	placeholder.Parent = gameplay
+	return placeholder
+end
+
+-- The room that holds the treasure always has a way to stock it; the server works out how much
+local function addStockPrompt(gameplay: Model, floor: BasePart, roomLabel: string)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = Catalog.vault.promptName
+	prompt.ActionText = "Stock the vault"
+	prompt.ObjectText = "Spoils become treasure"
+	prompt.HoldDuration = STOCK_HOLD_SECONDS
+	prompt.MaxActivationDistance = FIX_PROMPT_DISTANCE
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = findStockSpot(gameplay, floor, roomLabel)
+end
+
+-- Makes a room's Gameplay parts match its segment: trap state, mess, a fix prompt when worn,
+-- and the stock prompt in the room that holds the treasure
 local function dressGameplay(gameplay: Model, floor: BasePart, roomLabel: string, segment: Types.Segment, slot: number)
 	local trap = setUpTrap(gameplay, roomLabel, segment)
 	removeMessIfTidy(gameplay, segment)
 	if isWorn(segment) then
 		addFixPromptFor(gameplay, floor, roomLabel, segment, slot, trap)
+	end
+	if Catalog.rooms[segment.kind].holdsTreasure then
+		addStockPrompt(gameplay, floor, roomLabel)
 	end
 end
 
@@ -173,6 +209,61 @@ local function updateFixCost(room: Model, segment: Types.Segment)
 	local prompt = findGameplay(room):FindFirstChild("FixPrompt", true)
 	if prompt and prompt:IsA("ProximityPrompt") then
 		prompt.ObjectText = fixCostText(segment)
+	end
+end
+
+local function pileCount(treasure: Instance): number
+	local count = 0
+	while treasure:FindFirstChild(`Pile{count + 1}`) do
+		count += 1
+	end
+	return count
+end
+
+-- The template's coin piles, or nil while that room has no Treasure art
+local function templateTreasure(kind: Types.RoomKind): Model?
+	local original = findGameplay(findTemplate(kind)):FindFirstChild("Treasure")
+	return if original and original:IsA("Model") then original else nil
+end
+
+-- The room in the Model that holds the treasure, and its piles as shown now
+local function liveTreasure(model: Model, slot: number, segment: Types.Segment): (Model?, Instance?)
+	local room = model:FindFirstChild(roomName(slot, segment.kind))
+	if not (Catalog.rooms[segment.kind].holdsTreasure and room and room:IsA("Model")) then
+		return nil, nil
+	end
+	return room, findGameplay(room):FindFirstChild("Treasure")
+end
+
+-- A copy of the template's piles with only the first `shown` kept, placed where the room's
+-- piles are. Piles are swapped, not hidden: a hidden part in the world still renders
+local function trimmedTreasure(room: Model, kind: Types.RoomKind, original: Model, shown: number): Model
+	local treasure = original:Clone()
+	for i = shown + 1, pileCount(original) do
+		local pile = treasure:FindFirstChild(`Pile{i}`)
+		if pile then
+			pile:Destroy()
+		end
+	end
+	local offset = findFloor(findTemplate(kind)).CFrame:ToObjectSpace(original:GetPivot())
+	treasure:PivotTo(findFloor(room).CFrame * offset)
+	treasure:SetAttribute("PilesShown", shown)
+	return treasure
+end
+
+-- Shows one coin pile per step of treasure. Optional art: a room without a Treasure model
+-- just shows no piles. Swaps only when the count changes
+local function showTreasure(model: Model, dungeon: Types.Dungeon, treasure: number)
+	for slot, segment in dungeon.segments do
+		local room, current = liveTreasure(model, slot, segment)
+		local original = templateTreasure(segment.kind)
+		if room and current and original then
+			local shown = Rules.pilesShown(treasure, pileCount(original))
+			if current:GetAttribute("PilesShown") ~= shown then
+				trimmedTreasure(room, segment.kind, original, shown).Parent = current.Parent
+				current:Destroy()
+			end
+		end
 	end
 end
 
@@ -246,4 +337,5 @@ end
 return {
 	build = build,
 	update = update,
+	showTreasure = showTreasure,
 }

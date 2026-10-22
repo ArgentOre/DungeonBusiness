@@ -187,7 +187,7 @@ local function create(parent: Instance, onSell: (amount: number) -> ()): Parts
 	local sell = Ui.primaryButton(sellPage, "", function()
 		onSellClicked(onSell)
 	end)
-	Ui.text(sellPage, "Rather keep them as treasure? Stock them in the Treasure Room.", Ui.STYLES.muted)
+	Ui.text(sellPage, "Rather keep them as treasure? Stock them at the vault in the Treasure Room.", Ui.STYLES.muted)
 
 	local made: Parts = {
 		screen = screen,
