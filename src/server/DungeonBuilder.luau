@@ -17,6 +17,7 @@ local FIX_HOLD_SECONDS = 1.5
 local FIX_PROMPT_DISTANCE = 10
 local STOCK_HOLD_SECONDS = 1
 local STOCK_SPOT_OFFSET = CFrame.new(0, 3, 12) -- the placeholder sits clear of the RepairSpot's
+local PILE_SINK_MARGIN = 0.5 -- an empty vault's pile sits just under the floor, so no coin pokes through
 
 local function findFloor(room: Model): BasePart
 	local structure = room:FindFirstChild("Structure")
@@ -212,21 +213,13 @@ local function updateFixCost(room: Model, segment: Types.Segment)
 	end
 end
 
-local function pileCount(treasure: Instance): number
-	local count = 0
-	while treasure:FindFirstChild(`Pile{count + 1}`) do
-		count += 1
-	end
-	return count
-end
-
--- The template's coin piles, or nil while that room has no Treasure art
+-- The template's coin pile, or nil while that room has no Treasure art
 local function templateTreasure(kind: Types.RoomKind): Model?
 	local original = findGameplay(findTemplate(kind)):FindFirstChild("Treasure")
 	return if original and original:IsA("Model") then original else nil
 end
 
--- The room in the Model that holds the treasure, and its piles as shown now
+-- The room in the Model that holds the treasure, and its pile as it stands now
 local function liveTreasure(model: Model, slot: number, segment: Types.Segment): (Model?, Instance?)
 	local room = model:FindFirstChild(roomName(slot, segment.kind))
 	if not (Catalog.rooms[segment.kind].holdsTreasure and room and room:IsA("Model")) then
@@ -235,34 +228,22 @@ local function liveTreasure(model: Model, slot: number, segment: Types.Segment):
 	return room, findGameplay(room):FindFirstChild("Treasure")
 end
 
--- A copy of the template's piles with only the first `shown` kept, placed where the room's
--- piles are. Piles are swapped, not hidden: a hidden part in the world still renders
-local function trimmedTreasure(room: Model, kind: Types.RoomKind, original: Model, shown: number): Model
-	local treasure = original:Clone()
-	for i = shown + 1, pileCount(original) do
-		local pile = treasure:FindFirstChild(`Pile{i}`)
-		if pile then
-			pile:Destroy()
-		end
-	end
-	local offset = findFloor(findTemplate(kind)).CFrame:ToObjectSpace(original:GetPivot())
-	treasure:PivotTo(findFloor(room).CFrame * offset)
-	treasure:SetAttribute("PilesShown", shown)
-	return treasure
+-- Where the pile goes for this much treasure: its full-height spot from the template,
+-- lowered by the part of its height that shouldn't show. At 0 it's sunk just below the floor
+local function pilePlace(room: Model, kind: Types.RoomKind, original: Model, treasure: number): CFrame
+	local full = findFloor(room).CFrame * findFloor(findTemplate(kind)).CFrame:ToObjectSpace(original:GetPivot())
+	local sink = (1 - Rules.pileRise(treasure)) * (original:GetExtentsSize().Y + PILE_SINK_MARGIN)
+	return full * CFrame.new(0, -sink, 0)
 end
 
--- Shows one coin pile per step of treasure. Optional art: a room without a Treasure model
--- just shows no piles. Swaps only when the count changes
+-- Raises the vault's one coin pile to match the treasure. Optional art: a room without a
+-- Treasure model just shows no pile. The pile moves in place; nothing is cloned
 local function showTreasure(model: Model, dungeon: Types.Dungeon, treasure: number)
 	for slot, segment in dungeon.segments do
 		local room, current = liveTreasure(model, slot, segment)
 		local original = templateTreasure(segment.kind)
-		if room and current and original then
-			local shown = Rules.pilesShown(treasure, pileCount(original))
-			if current:GetAttribute("PilesShown") ~= shown then
-				trimmedTreasure(room, segment.kind, original, shown).Parent = current.Parent
-				current:Destroy()
-			end
+		if room and current and current:IsA("Model") and original then
+			current:PivotTo(pilePlace(room, segment.kind, original, treasure))
 		end
 	end
 end
