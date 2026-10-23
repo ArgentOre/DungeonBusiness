@@ -156,11 +156,12 @@ local function stockRefusal(state: Types.PlayerState): Types.Refusal?
 	return nil
 end
 
--- How many of the vault's coin piles show: pile i once the treasure reaches i out of
--- `pileCount` of the way to full, so an empty vault shows none and a full one shows all
-local function pilesShown(treasure: number, pileCount: number): number
-	local shown = math.floor(treasure / Catalog.economy.treasureMax * pileCount)
-	return math.clamp(shown, 0, pileCount)
+-- How far up the vault's coin pile stands, 0 (sunk out of sight) to 1 (its full height).
+-- A cube root, because a pile's volume grows with the cube of its height: this way the
+-- coins you see grow in step with the treasure, and a little treasure still shows
+local function pileRise(treasure: number): number
+	local fill = math.clamp(treasure / Catalog.economy.treasureMax, 0, 1)
+	return fill ^ (1 / 3)
 end
 
 local function canStock(state: Types.PlayerState, amount: number): (boolean, string?)
@@ -188,7 +189,7 @@ return {
 	stockable = stockable,
 	canStock = canStock,
 	stockRefusal = stockRefusal,
-	pilesShown = pilesShown,
+	pileRise = pileRise,
 	repairCost = repairCost,
 	canRepair = canRepair,
 	affordableRepair = affordableRepair,
